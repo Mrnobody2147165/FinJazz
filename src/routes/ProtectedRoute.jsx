@@ -1,9 +1,10 @@
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { LoadingOverlay } from '@/components/ui/Loading';
 
-const ProtectedRoute = ({ children }) => {
-  const { user, userData, initialLoad } = useAuth();
+const ProtectedRoute = () => {
+  const authState = useAuth() || {};
+  const { user, userData, initialLoad } = authState;
   const location = useLocation();
 
   console.log('[ProtectedRoute]', {
@@ -25,7 +26,6 @@ const ProtectedRoute = ({ children }) => {
   }
 
   if (!userData) {
-    // Still loading userData - show loading instead of redirecting
     console.log('[ProtectedRoute] Waiting for userData...');
     return <LoadingOverlay message="Loading profile..." />;
   }
@@ -40,8 +40,8 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  console.log('[ProtectedRoute] Rendering children');
-  return children;
+  console.log('[ProtectedRoute] Rendering outlet');
+  return <Outlet />;
 };
 
 export default ProtectedRoute;

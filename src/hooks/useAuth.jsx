@@ -89,7 +89,14 @@ export const AuthProvider = ({ children }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    console.error('[useAuth] AuthContext is null - returning fallback state');
+    // Return a fallback state instead of throwing
+    return {
+      user: null,
+      userData: null,
+      handleLogout: async () => {},
+      initialLoad: true,
+    };
   }
   return context;
 };

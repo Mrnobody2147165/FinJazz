@@ -1,0 +1,9 @@
+export { default as LoginPage } from './LoginPage';
+export { default as SignupPage } from './SignupPage';
+export { default as ForgotPasswordPage } from './ForgotPasswordPage';
+export { default as OnboardingPage } from './OnboardingPage';
+export { default as DashboardPage } from './DashboardPage';
+export { default as TransactionsPage } from './TransactionsPage';
+export { default as BudgetsPage } from './BudgetsPage';
+export { default as ProjectsPage } from './ProjectsPage';
+export { default as SettingsPage } from './SettingsPage';

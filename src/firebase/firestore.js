@@ -23,10 +23,15 @@ export const getUserData = async (uid) => {
 };
 
 export const updateUserData = async (uid, data) => {
-  await updateDoc(doc(db, 'users', uid), {
-    ...data,
-    updatedAt: serverTimestamp(),
-  });
+  await setDoc(
+    doc(db, 'users', uid),
+    {
+      uid,
+      ...data,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
 };
 
 export const subscribeToUserData = (uid, callback) => {

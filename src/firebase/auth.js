@@ -62,6 +62,7 @@ export const signInWithGoogle = async () => {
       createdAt: serverTimestamp(),
     });
   }
+  console.log("db object:", db);
 
   return user;
 };

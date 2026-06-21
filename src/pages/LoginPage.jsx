@@ -106,7 +106,7 @@ const LoginPage = () => {
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-red-500/10 border border-red-500/20 text-red-500 text-sm px-4 py-3 rounded-lg"
+                  className="bg-[var(--error)]/10 border border-[var(--error)]/20 text-[var(--error)] text-sm px-4 py-3 rounded-lg"
                 >
                   {error}
                 </motion.div>

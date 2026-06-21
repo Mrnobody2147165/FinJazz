@@ -365,7 +365,7 @@ const OnboardingPage = () => {
                   </Select>
 
                   {profileForm.formState.errors.currency && (
-                    <p className="text-sm text-red-500">
+                    <p className="text-sm text-[var(--error)]">
                       {profileForm.formState.errors.currency.message}
                     </p>
                   )}

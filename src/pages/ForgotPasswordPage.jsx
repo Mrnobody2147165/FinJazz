@@ -68,8 +68,8 @@ const ForgotPasswordPage = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 className="text-center py-4"
               >
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-500/10 mb-4">
-                  <CheckCircle className="h-6 w-6 text-green-500" />
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[var(--success)]/10 mb-4">
+                  <CheckCircle className="h-6 w-6 text-[var(--success)]" />
                 </div>
                 <p className="text-[var(--foreground)] mb-4">Check your email</p>
                 <p className="text-sm text-[var(--muted-foreground)] mb-6">
@@ -99,7 +99,7 @@ const ForgotPasswordPage = () => {
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-red-500/10 border border-red-500/20 text-red-500 text-sm px-4 py-3 rounded-lg"
+                    className="bg-[var(--error)]/10 border border-[var(--error)]/20 text-[var(--error)] text-sm px-4 py-3 rounded-lg"
                   >
                     {error}
                   </motion.div>

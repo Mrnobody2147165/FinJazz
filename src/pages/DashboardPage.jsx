@@ -36,11 +36,11 @@ import {
   subscribeToProjects,
 } from '@/firebase/firestore';
 import { formatCurrency, formatDate, calculateTotals, getExpensesByCategory, prepareChartData } from '@/utils/helpers';
-
-const COLORS = ['#1A472A', '#7B2FBE', '#22c55e', '#f59e0b', '#ef4444', '#3b82f6', '#6366f1'];
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 const DashboardPage = () => {
   const { user, userData } = useAuth();
+  const themeColors = useThemeColors();
   const [transactions, setTransactions] = useState([]);
   const [budgets, setBudgets] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -121,7 +121,7 @@ const DashboardPage = () => {
             transition={{ delay: 0.1 }}
           >
             <Card className="relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/10 rounded-full -mr-10 -mt-10" />
+              <div className="absolute top-0 right-0 w-20 h-20 bg-[var(--success)]/10 rounded-full -mr-10 -mt-10" />
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -130,8 +130,8 @@ const DashboardPage = () => {
                       {formatCurrency(totalRevenue, currency)}
                     </p>
                   </div>
-                  <div className="p-3 rounded-full bg-green-500/10">
-                    <TrendingUp className="h-5 w-5 text-green-500" />
+                  <div className="p-3 rounded-full bg-[var(--success)]/10">
+                    <TrendingUp className="h-5 w-5 text-[var(--success)]" />
                   </div>
                 </div>
               </CardContent>
@@ -144,7 +144,7 @@ const DashboardPage = () => {
             transition={{ delay: 0.2 }}
           >
             <Card className="relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-red-500/10 rounded-full -mr-10 -mt-10" />
+              <div className="absolute top-0 right-0 w-20 h-20 bg-[var(--error)]/10 rounded-full -mr-10 -mt-10" />
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -153,8 +153,8 @@ const DashboardPage = () => {
                       {formatCurrency(totalExpenses, currency)}
                     </p>
                   </div>
-                  <div className="p-3 rounded-full bg-red-500/10">
-                    <TrendingDown className="h-5 w-5 text-red-500" />
+                  <div className="p-3 rounded-full bg-[var(--error)]/10">
+                    <TrendingDown className="h-5 w-5 text-[var(--error)]" />
                   </div>
                 </div>
               </CardContent>
@@ -172,12 +172,12 @@ const DashboardPage = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-[var(--muted-foreground)]">Profit</p>
-                    <p className={`text-2xl font-bold mt-1 ${profit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    <p className={`text-2xl font-bold mt-1 ${profit >= 0 ? 'text-[var(--success)]' : 'text-[var(--error)]'}`}>
                       {formatCurrency(profit, currency)}
                     </p>
                   </div>
-                  <div className={`p-3 rounded-full ${profit >= 0 ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
-                    <Wallet className={`h-5 w-5 ${profit >= 0 ? 'text-green-500' : 'text-red-500'}`} />
+                  <div className={`p-3 rounded-full ${profit >= 0 ? 'bg-[var(--success)]/10' : 'bg-[var(--error)]/10'}`}>
+                    <Wallet className={`h-5 w-5 ${profit >= 0 ? 'text-[var(--success)]' : 'text-[var(--error)]'}`} />
                   </div>
                 </div>
               </CardContent>
@@ -230,16 +230,16 @@ const DashboardPage = () => {
                     <Area
                       type="monotone"
                       dataKey="income"
-                      stroke="#22c55e"
-                      fill="#22c55e"
+                      stroke={themeColors.success}
+                      fill={themeColors.success}
                       fillOpacity={0.2}
                       name="Revenue"
                     />
                     <Area
                       type="monotone"
                       dataKey="expenses"
-                      stroke="#ef4444"
-                      fill="#ef4444"
+                      stroke={themeColors.error}
+                      fill={themeColors.error}
                       fillOpacity={0.2}
                       name="Expenses"
                     />
@@ -351,17 +351,17 @@ const DashboardPage = () => {
           transition={{ delay: 0.2 }}
         >
           <Card className="relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/10 rounded-full -mr-10 -mt-10" />
+            <div className="absolute top-0 right-0 w-20 h-20 bg-[var(--success)]/10 rounded-full -mr-10 -mt-10" />
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-[var(--muted-foreground)]">Total Income</p>
-                  <p className="text-2xl font-bold text-green-500 mt-1">
+                  <p className="text-2xl font-bold text-[var(--success)] mt-1">
                     {formatCurrency(totals.income, currency)}
                   </p>
                 </div>
-                <div className="p-3 rounded-full bg-green-500/10">
-                  <TrendingUp className="h-5 w-5 text-green-500" />
+                <div className="p-3 rounded-full bg-[var(--success)]/10">
+                  <TrendingUp className="h-5 w-5 text-[var(--success)]" />
                 </div>
               </div>
             </CardContent>
@@ -374,17 +374,17 @@ const DashboardPage = () => {
           transition={{ delay: 0.3 }}
         >
           <Card className="relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-red-500/10 rounded-full -mr-10 -mt-10" />
+            <div className="absolute top-0 right-0 w-20 h-20 bg-[var(--error)]/10 rounded-full -mr-10 -mt-10" />
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-[var(--muted-foreground)]">Total Expenses</p>
-                  <p className="text-2xl font-bold text-red-500 mt-1">
+                  <p className="text-2xl font-bold text-[var(--error)] mt-1">
                     {formatCurrency(totals.expenses, currency)}
                   </p>
                 </div>
-                <div className="p-3 rounded-full bg-red-500/10">
-                  <TrendingDown className="h-5 w-5 text-red-500" />
+                <div className="p-3 rounded-full bg-[var(--error)]/10">
+                  <TrendingDown className="h-5 w-5 text-[var(--error)]" />
                 </div>
               </div>
             </CardContent>
@@ -402,7 +402,7 @@ const DashboardPage = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-[var(--muted-foreground)]">Savings</p>
-                  <p className={`text-2xl font-bold mt-1 ${totals.savings >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  <p className={`text-2xl font-bold mt-1 ${totals.savings >= 0 ? 'text-[var(--success)]' : 'text-[var(--error)]'}`}>
                     {formatCurrency(totals.savings, currency)}
                   </p>
                 </div>
@@ -437,16 +437,16 @@ const DashboardPage = () => {
                   <Area
                     type="monotone"
                     dataKey="income"
-                    stroke="#22c55e"
-                    fill="#22c55e"
+                    stroke={themeColors.success}
+                    fill={themeColors.success}
                     fillOpacity={0.2}
                     name="Income"
                   />
                   <Area
                     type="monotone"
                     dataKey="expenses"
-                    stroke="#ef4444"
-                    fill="#ef4444"
+                    stroke={themeColors.error}
+                    fill={themeColors.error}
                     fillOpacity={0.2}
                     name="Expenses"
                   />
@@ -480,7 +480,7 @@ const DashboardPage = () => {
                     dataKey="value"
                   >
                     {categories.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell key={`cell-${index}`} fill={themeColors.chart[index % themeColors.chart.length]} />
                     ))}
                   </Pie>
                   <Tooltip
@@ -526,14 +526,14 @@ const DashboardPage = () => {
                     <div
                       className={`p-2 rounded-full ${
                         transaction.type === 'income'
-                          ? 'bg-green-500/10'
-                          : 'bg-red-500/10'
+                          ? 'bg-[var(--success)]/10'
+                          : 'bg-[var(--error)]/10'
                       }`}
                     >
                       {transaction.type === 'income' ? (
-                        <ArrowUpRight className="h-4 w-4 text-green-500" />
+                        <ArrowUpRight className="h-4 w-4 text-[var(--success)]" />
                       ) : (
-                        <ArrowDownRight className="h-4 w-4 text-red-500" />
+                        <ArrowDownRight className="h-4 w-4 text-[var(--error)]" />
                       )}
                     </div>
                     <div>
@@ -545,7 +545,7 @@ const DashboardPage = () => {
                   </div>
                   <p
                     className={`font-semibold ${
-                      transaction.type === 'income' ? 'text-green-500' : 'text-red-500'
+                      transaction.type === 'income' ? 'text-[var(--success)]' : 'text-[var(--error)]'
                     }`}
                   >
                     {transaction.type === 'income' ? '+' : '-'}

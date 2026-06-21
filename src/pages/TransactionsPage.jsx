@@ -199,7 +199,7 @@ const TransactionsPage = () => {
         <Card>
           <CardContent className="p-6">
             <p className="text-sm text-[var(--muted-foreground)]">Total Income</p>
-            <p className="text-xl font-bold text-green-500 mt-1">
+            <p className="text-xl font-bold text-[var(--success)] mt-1">
               {formatCurrency(totalIncome, currency)}
             </p>
           </CardContent>
@@ -207,7 +207,7 @@ const TransactionsPage = () => {
         <Card>
           <CardContent className="p-6">
             <p className="text-sm text-[var(--muted-foreground)]">Total Expenses</p>
-            <p className="text-xl font-bold text-red-500 mt-1">
+            <p className="text-xl font-bold text-[var(--error)] mt-1">
               {formatCurrency(totalExpense, currency)}
             </p>
           </CardContent>
@@ -217,7 +217,7 @@ const TransactionsPage = () => {
             <p className="text-sm text-[var(--muted-foreground)]">Net</p>
             <p
               className={`text-xl font-bold mt-1 ${
-                totalIncome - totalExpense >= 0 ? 'text-green-500' : 'text-red-500'
+                totalIncome - totalExpense >= 0 ? 'text-[var(--success)]' : 'text-[var(--error)]'
               }`}
             >
               {formatCurrency(totalIncome - totalExpense, currency)}
@@ -295,14 +295,14 @@ const TransactionsPage = () => {
                     <div
                       className={`p-2 rounded-full ${
                         transaction.type === 'income'
-                          ? 'bg-green-500/10'
-                          : 'bg-red-500/10'
+                          ? 'bg-[var(--success)]/10'
+                          : 'bg-[var(--error)]/10'
                       }`}
                     >
                       {transaction.type === 'income' ? (
-                        <ArrowUpRight className="h-4 w-4 text-green-500" />
+                        <ArrowUpRight className="h-4 w-4 text-[var(--success)]" />
                       ) : (
-                        <ArrowDownRight className="h-4 w-4 text-red-500" />
+                        <ArrowDownRight className="h-4 w-4 text-[var(--error)]" />
                       )}
                     </div>
                     <div>
@@ -320,7 +320,7 @@ const TransactionsPage = () => {
                   <div className="flex items-center gap-4">
                     <p
                       className={`font-semibold ${
-                        transaction.type === 'income' ? 'text-green-500' : 'text-red-500'
+                        transaction.type === 'income' ? 'text-[var(--success)]' : 'text-[var(--error)]'
                       }`}
                     >
                       {transaction.type === 'income' ? '+' : '-'}
@@ -337,7 +337,7 @@ const TransactionsPage = () => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                        className="text-[var(--error)] hover:text-[var(--error)]/80 hover:bg-[var(--error)]/10"
                         onClick={() => setDeleteId(transaction.id)}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -380,7 +380,7 @@ const TransactionsPage = () => {
                     <label
                       className={`flex-1 flex items-center justify-center py-2 px-4 rounded-lg border cursor-pointer transition-all ${
                         watchType === 'income'
-                          ? 'border-green-500 bg-green-500/10 text-green-500'
+                          ? 'border-[var(--success)] bg-[var(--success)]/10 text-[var(--success)]'
                           : 'border-[var(--border)] text-[var(--muted-foreground)]'
                       }`}
                     >
@@ -396,7 +396,7 @@ const TransactionsPage = () => {
                     <label
                       className={`flex-1 flex items-center justify-center py-2 px-4 rounded-lg border cursor-pointer transition-all ${
                         watchType === 'expense'
-                          ? 'border-red-500 bg-red-500/10 text-red-500'
+                          ? 'border-[var(--error)] bg-[var(--error)]/10 text-[var(--error)]'
                           : 'border-[var(--border)] text-[var(--muted-foreground)]'
                       }`}
                     >

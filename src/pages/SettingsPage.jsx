@@ -256,7 +256,7 @@ const SettingsPage = () => {
                       <motion.div
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="bg-green-500/10 border border-green-500/20 text-green-500 text-sm px-4 py-3 rounded-lg flex items-center gap-2"
+                        className="bg-[var(--success)]/10 border border-[var(--success)]/20 text-[var(--success)] text-sm px-4 py-3 rounded-lg flex items-center gap-2"
                       >
                         <Check className="h-4 w-4" />
                         {success}
@@ -267,7 +267,7 @@ const SettingsPage = () => {
                       <motion.div
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="bg-red-500/10 border border-red-500/20 text-red-500 text-sm px-4 py-3 rounded-lg"
+                        className="bg-[var(--error)]/10 border border-[var(--error)]/20 text-[var(--error)] text-sm px-4 py-3 rounded-lg"
                       >
                         {error}
                       </motion.div>
@@ -383,7 +383,7 @@ const SettingsPage = () => {
                       <motion.div
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="bg-green-500/10 border border-green-500/20 text-green-500 text-sm px-4 py-3 rounded-lg flex items-center gap-2"
+                        className="bg-[var(--success)]/10 border border-[var(--success)]/20 text-[var(--success)] text-sm px-4 py-3 rounded-lg flex items-center gap-2"
                       >
                         <Check className="h-4 w-4" />
                         {success}

@@ -233,7 +233,7 @@ const BudgetsPage = () => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                          className="text-[var(--error)] hover:text-[var(--error)]/80 hover:bg-[var(--error)]/10"
                           onClick={() => setDeleteId(budget.id)}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -246,7 +246,7 @@ const BudgetsPage = () => {
                         <span className="text-[var(--muted-foreground)]">Spent</span>
                         <span
                           className={`font-semibold ${
-                            isOverBudget ? 'text-red-500' : 'text-[var(--foreground)]'
+                            isOverBudget ? 'text-[var(--error)]' : 'text-[var(--foreground)]'
                           }`}
                         >
                           {formatCurrency(spent, currency)} / {formatCurrency(budget.amount, currency)}
@@ -254,7 +254,7 @@ const BudgetsPage = () => {
                       </div>
                       <Progress
                         value={Math.min(percentage, 100)}
-                        barClassName={isOverBudget ? 'bg-red-500' : percentage > 75 ? 'bg-yellow-500' : 'bg-[var(--primary)]'}
+                        barClassName={isOverBudget ? 'bg-[var(--error)]' : percentage > 75 ? 'bg-[var(--warning)]' : 'bg-[var(--primary)]'}
                       />
                     </div>
 
@@ -262,7 +262,7 @@ const BudgetsPage = () => {
                       <span className="text-sm text-[var(--muted-foreground)]">Remaining</span>
                       <span
                         className={`text-sm font-semibold ${
-                          isOverBudget ? 'text-red-500' : 'text-green-500'
+                          isOverBudget ? 'text-[var(--error)]' : 'text-[var(--success)]'
                         }`}
                       >
                         {isOverBudget
@@ -272,8 +272,8 @@ const BudgetsPage = () => {
                     </div>
 
                     {isOverBudget && (
-                      <div className="mt-3 p-2 bg-red-500/10 rounded-lg">
-                        <p className="text-xs text-red-500">
+                      <div className="mt-3 p-2 bg-[var(--error)]/10 rounded-lg">
+                        <p className="text-xs text-[var(--error)]">
                           You've exceeded this budget by {formatCurrency(Math.abs(remaining), currency)}
                         </p>
                       </div>

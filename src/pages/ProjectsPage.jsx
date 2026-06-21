@@ -150,7 +150,7 @@ const ProjectsPage = () => {
         <Card>
           <CardContent className="p-6">
             <p className="text-sm text-[var(--muted-foreground)]">Total Revenue</p>
-            <p className="text-xl font-bold text-green-500 mt-1">
+            <p className="text-xl font-bold text-[var(--success)] mt-1">
               {formatCurrency(totalRevenue, currency)}
             </p>
           </CardContent>
@@ -158,7 +158,7 @@ const ProjectsPage = () => {
         <Card>
           <CardContent className="p-6">
             <p className="text-sm text-[var(--muted-foreground)]">Total Expenses</p>
-            <p className="text-xl font-bold text-red-500 mt-1">
+            <p className="text-xl font-bold text-[var(--error)] mt-1">
               {formatCurrency(totalExpenses, currency)}
             </p>
           </CardContent>
@@ -231,10 +231,10 @@ const ProjectsPage = () => {
                       <td className="px-6 py-4 text-right text-[var(--foreground)]">
                         {formatCurrency(project.budget || 0, currency)}
                       </td>
-                      <td className="px-6 py-4 text-right text-green-500">
+                      <td className="px-6 py-4 text-right text-[var(--success)]">
                         {formatCurrency(project.revenue || 0, currency)}
                       </td>
-                      <td className="px-6 py-4 text-right text-red-500">
+                      <td className="px-6 py-4 text-right text-[var(--error)]">
                         {formatCurrency(project.expenses || 0, currency)}
                       </td>
                       <td className="px-6 py-4 text-center">
@@ -250,7 +250,7 @@ const ProjectsPage = () => {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                            className="text-[var(--error)] hover:text-[var(--error)]/80 hover:bg-[var(--error)]/10"
                             onClick={() => setDeleteId(project.id)}
                           >
                             <Trash2 className="h-4 w-4" />

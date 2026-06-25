@@ -33,14 +33,12 @@ const profileSchema = z.object({
 });
 
 const currencies = [
+  { value: "PKR", label: "PKR - Pakistani Rupee" },
   { value: "USD", label: "USD - US Dollar" },
   { value: "EUR", label: "EUR - Euro" },
   { value: "GBP", label: "GBP - British Pound" },
-  { value: "JPY", label: "JPY - Japanese Yen" },
-  { value: "CAD", label: "CAD - Canadian Dollar" },
-  { value: "AUD", label: "AUD - Australian Dollar" },
-  { value: "INR", label: "INR - Indian Rupee" },
-  { value: "CNY", label: "CNY - Chinese Yuan" },
+  { value: "AED", label: "AED - UAE Dirham" },
+  { value: "SAR", label: "SAR - Saudi Riyal" },
 ];
 
 const OnboardingPage = () => {
@@ -64,7 +62,7 @@ const OnboardingPage = () => {
     defaultValues: {
       fullName: userData?.fullName || "",
       companyName: "",
-      currency: userData?.currency || "USD",
+      currency: userData?.currency || "PKR",
     },
   });
 

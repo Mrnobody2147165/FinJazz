@@ -168,7 +168,7 @@ const DashboardLayout = () => {
         <button onClick={() => setSidebarOpen(true)} className="text-[var(--foreground)]">
           <Menu className="h-6 w-6" />
         </button>
-        <h1 className="text-lg font-bold gradient-text">FinJazz</h1>
+        <h1 className="text-lg font-bold text-[var(--primary)]">FinJazz</h1>
         <div className="flex items-center gap-2">
           <NotificationCenter
             onMarkRead={handleMarkRead}
@@ -202,7 +202,7 @@ const DashboardLayout = () => {
               className="lg:hidden fixed inset-y-0 left-0 z-50 w-72 bg-[var(--card)] border-r border-[var(--border)]"
             >
               <div className="flex items-center justify-between p-4 border-b border-[var(--border)]">
-                <h1 className="text-xl font-bold gradient-text">FinJazz</h1>
+                <h1 className="text-xl font-bold text-[var(--primary)]">FinJazz</h1>
                 <button onClick={() => setSidebarOpen(false)} className="text-[var(--foreground)]">
                   <X className="h-6 w-6" />
                 </button>

@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Modal, ModalContent, ModalFooter } from '@/components/ui/Modal';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/stores/index';
 import {
   createBudget,
   updateBudget,
@@ -41,7 +42,8 @@ const categories = [
 ];
 
 const BudgetsPage = () => {
-  const { user, userData } = useAuth();
+  const { user } = useAuth();
+  const { activeProfileId, activeProfile } = useAuthStore();
   const [budgets, setBudgets] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +52,7 @@ const BudgetsPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
 
-  const currency = userData?.currency || 'USD';
+  const currency = activeProfile?.currency || 'PKR';
 
   const {
     register,
@@ -68,13 +70,13 @@ const BudgetsPage = () => {
   });
 
   useEffect(() => {
-    if (!user?.uid) return;
+    if (!user?.uid || !activeProfileId) return;
 
-    const unsubBudget = subscribeToBudgets(user.uid, (data) => {
+    const unsubBudget = subscribeToBudgets(user.uid, activeProfileId, (data) => {
       setBudgets(data);
     });
 
-    const unsubTransactions = subscribeToTransactions(user.uid, (data) => {
+    const unsubTransactions = subscribeToTransactions(user.uid, activeProfileId, (data) => {
       setTransactions(data);
       setLoading(false);
     });
@@ -144,9 +146,9 @@ const BudgetsPage = () => {
     setSubmitting(true);
     try {
       if (editingBudget) {
-        await updateBudget(user.uid, editingBudget.id, data);
+        await updateBudget(user.uid, activeProfileId, editingBudget.id, data);
       } else {
-        await createBudget(user.uid, data);
+        await createBudget(user.uid, activeProfileId, data);
       }
       closeModal();
     } catch (error) {
@@ -158,7 +160,7 @@ const BudgetsPage = () => {
 
   const handleDelete = async (id) => {
     try {
-      await deleteBudget(user.uid, id);
+      await deleteBudget(user.uid, activeProfileId, id);
       setDeleteId(null);
     } catch (error) {
       console.error('Error deleting budget:', error);

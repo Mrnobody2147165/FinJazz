@@ -24,6 +24,7 @@ import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Modal, ModalContent, ModalFooter } from '@/components/ui/Modal';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/stores/index';
 import {
   createTransaction,
   updateTransaction,
@@ -47,7 +48,8 @@ const categories = {
 };
 
 const TransactionsPage = () => {
-  const { user, userData } = useAuth();
+  const { user } = useAuth();
+  const { activeProfileId, activeProfile } = useAuthStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -59,7 +61,7 @@ const TransactionsPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
 
-  const currency = userData?.currency || 'USD';
+  const currency = activeProfile?.currency || 'PKR';
 
   const {
     register,
@@ -89,15 +91,15 @@ const TransactionsPage = () => {
   }, [searchParams, setSearchParams]);
 
   useEffect(() => {
-    if (!user?.uid) return;
+    if (!user?.uid || !activeProfileId) return;
 
-    const unsubscribe = subscribeToTransactions(user.uid, (data) => {
+    const unsubscribe = subscribeToTransactions(user.uid, activeProfileId, (data) => {
       setTransactions(data);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [user?.uid]);
+  }, [user?.uid, activeProfileId]);
 
   useEffect(() => {
     if (editingTransaction) {
@@ -163,9 +165,9 @@ const TransactionsPage = () => {
       };
 
       if (editingTransaction) {
-        await updateTransaction(user.uid, editingTransaction.id, transactionData);
+        await updateTransaction(user.uid, activeProfileId, editingTransaction.id, transactionData);
       } else {
-        await createTransaction(user.uid, transactionData);
+        await createTransaction(user.uid, activeProfileId, transactionData);
       }
 
       closeModal();
@@ -178,7 +180,7 @@ const TransactionsPage = () => {
 
   const handleDelete = async (id) => {
     try {
-      await deleteTransaction(user.uid, id);
+      await deleteTransaction(user.uid, activeProfileId, id);
       setDeleteId(null);
     } catch (error) {
       console.error('Error deleting transaction:', error);

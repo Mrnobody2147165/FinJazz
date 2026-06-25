@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -10,6 +10,11 @@ import {
   Receipt,
   ArrowUpRight,
   ArrowDownRight,
+  Bell,
+  Calendar,
+  AlertTriangle,
+  Clock,
+  CheckCircle2,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -29,41 +34,44 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/Badge';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { Progress } from '@/components/ui/Progress';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/stores/index';
 import {
   subscribeToTransactions,
   subscribeToBudgets,
   subscribeToProjects,
 } from '@/firebase/firestore';
-import { formatCurrency, formatDate, calculateTotals, getExpensesByCategory, prepareChartData } from '@/utils/helpers';
+import { formatCurrency, formatDate, calculateTotals, getExpensesByCategory, prepareChartData, getDeadlineColor } from '@/utils/helpers';
 import { useThemeColors } from '@/hooks/useThemeColors';
 
 const DashboardPage = () => {
-  const { user, userData } = useAuth();
+  const { user } = useAuth();
+  const { activeProfileId, activeProfile } = useAuthStore();
   const themeColors = useThemeColors();
   const [transactions, setTransactions] = useState([]);
   const [budgets, setBudgets] = useState([]);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const isCompany = userData?.accountType === 'company';
-  const currency = userData?.currency || 'USD';
+  const isCompany = activeProfile?.profileType === 'company';
+  const currency = activeProfile?.currency || 'PKR';
 
   useEffect(() => {
-    if (!user?.uid) return;
+    if (!user?.uid || !activeProfileId) return;
 
-    const unsubTransactions = subscribeToTransactions(user.uid, (data) => {
+    const unsubTransactions = subscribeToTransactions(user.uid, activeProfileId, (data) => {
       setTransactions(data);
       setLoading(false);
     });
 
-    const unsubBudgets = subscribeToBudgets(user.uid, (data) => {
+    const unsubBudgets = subscribeToBudgets(user.uid, activeProfileId, (data) => {
       setBudgets(data);
     });
 
     let unsubProjects;
     if (isCompany) {
-      unsubProjects = subscribeToProjects(user.uid, (data) => {
+      unsubProjects = subscribeToProjects(user.uid, activeProfileId, (data) => {
         setProjects(data);
       });
     }
@@ -73,12 +81,82 @@ const DashboardPage = () => {
       unsubBudgets();
       if (unsubProjects) unsubProjects();
     };
-  }, [user?.uid, isCompany]);
+  }, [user?.uid, activeProfileId, isCompany]);
 
   const totals = calculateTotals(transactions);
   const categories = getExpensesByCategory(transactions);
   const chartData = prepareChartData(transactions);
   const recentTransactions = transactions.slice(0, 5);
+
+  // Calculate budget alerts
+  const budgetAlerts = useMemo(() => {
+    if (budgets.length === 0) return [];
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    return budgets.map((budget) => {
+      const spent = transactions
+        .filter((t) => {
+          const transactionDate = t.date?.toDate ? t.date.toDate() : new Date(t.date);
+          const isExpense = t.type === 'expense';
+          const matchesCategory = t.category === budget.category;
+          const isCurrentPeriod =
+            budget.period === 'monthly'
+              ? transactionDate.getMonth() === currentMonth &&
+                transactionDate.getFullYear() === currentYear
+              : transactionDate.getFullYear() === currentYear;
+          return isExpense && matchesCategory && isCurrentPeriod;
+        })
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      const percentage = (spent / budget.amount) * 100;
+      let severity = 'info';
+      if (percentage >= 100) severity = 'critical';
+      else if (percentage >= 90) severity = 'warning';
+      else if (percentage >= 75) severity = 'warning';
+      else if (percentage >= 50) severity = 'info';
+
+      return {
+        ...budget,
+        spent,
+        remaining: budget.amount - spent,
+        percentage: Math.min(percentage, 100),
+        severity,
+        isOverBudget: spent > budget.amount,
+      };
+    }).filter((b) => b.percentage >= 50 || b.isOverBudget)
+      .sort((a, b) => b.percentage - a.percentage);
+  }, [budgets, transactions]);
+
+  // Calculate project deadlines
+  const projectDeadlines = useMemo(() => {
+    if (!isCompany || projects.length === 0) return [];
+    const now = new Date();
+
+    return projects
+      .filter((p) => p.status !== 'completed' && p.dueDate)
+      .map((project) => {
+        const dueDate = project.dueDate?.toDate ? project.dueDate.toDate() : new Date(project.dueDate);
+        const daysRemaining = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
+        const startDate = project.startDate?.toDate ? project.startDate.toDate() : new Date(project.startDate);
+
+        let status = 'on-track';
+        if (daysRemaining < 0) status = 'overdue';
+        else if (daysRemaining <= 3) status = 'urgent';
+        else if (daysRemaining <= 7) status = 'warning';
+
+        return {
+          ...project,
+          dueDateObj: dueDate,
+          startDateObj: startDate,
+          daysRemaining,
+          status,
+        };
+      })
+      .sort((a, b) => a.daysRemaining - b.daysRemaining)
+      .slice(0, 5);
+  }, [projects, isCompany]);
 
   if (loading) {
     return (
@@ -560,6 +638,134 @@ const DashboardPage = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Budget Alerts Widget */}
+      {budgetAlerts.length > 0 && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-[var(--warning)]" />
+              Budget Alerts
+            </CardTitle>
+            <Link to="/budgets">
+              <Button variant="ghost" size="sm">
+                View All
+              </Button>
+            </Link>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {budgetAlerts.slice(0, 3).map((budget) => (
+                <div
+                  key={budget.id}
+                  className="p-4 rounded-lg border border-[var(--border)] bg-[var(--surface)]"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">{budget.category}</Badge>
+                      <span className="font-medium text-[var(--foreground)]">{budget.name}</span>
+                    </div>
+                    <Badge
+                      variant={budget.isOverBudget ? 'destructive' : budget.severity === 'warning' ? 'warning' : 'outline'}
+                    >
+                      {budget.isOverBudget ? 'Over Budget' : `${Math.round(budget.percentage)}%`}
+                    </Badge>
+                  </div>
+                  <Progress
+                    value={budget.percentage}
+                    barClassName={
+                      budget.isOverBudget
+                        ? 'bg-[var(--danger)]'
+                        : budget.percentage >= 90
+                        ? 'bg-[var(--warning)]'
+                        : budget.percentage >= 75
+                        ? 'bg-[var(--warning)]'
+                        : 'bg-[var(--primary)]'
+                    }
+                  />
+                  <div className="flex items-center justify-between mt-2 text-sm">
+                    <span className="text-[var(--muted-foreground)]">
+                      {formatCurrency(budget.spent, currency)} spent
+                    </span>
+                    <span className={budget.isOverBudget ? 'text-[var(--danger)]' : 'text-[var(--success)]'}>
+                      {budget.isOverBudget
+                        ? `${formatCurrency(Math.abs(budget.remaining), currency)} over`
+                        : `${formatCurrency(budget.remaining, currency)} left`}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Project Deadlines Widget (Company Only) */}
+      {isCompany && projectDeadlines.length > 0 && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-[var(--primary)]" />
+              Upcoming Deadlines
+            </CardTitle>
+            <Link to="/projects">
+              <Button variant="ghost" size="sm">
+                View All
+              </Button>
+            </Link>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {projectDeadlines.map((project) => (
+                <div
+                  key={project.id}
+                  className="flex items-center justify-between p-3 rounded-lg bg-[var(--muted)]/50"
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="p-2 rounded-full"
+                      style={{
+                        backgroundColor:
+                          project.status === 'overdue'
+                            ? 'var(--danger)'
+                            : project.status === 'urgent'
+                            ? 'var(--warning)'
+                            : 'var(--primary)',
+                        opacity: 0.2,
+                      }}
+                    >
+                      {project.status === 'overdue' ? (
+                        <AlertTriangle className="h-4 w-4 text-[var(--danger)]" />
+                      ) : (
+                        <Calendar className="h-4 w-4 text-[var(--primary)]" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-medium text-[var(--foreground)]">{project.name}</p>
+                      <p className="text-sm text-[var(--muted-foreground)]">{project.client}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p
+                      className="text-sm font-semibold"
+                      style={{ color: getDeadlineColor(project.daysRemaining) }}
+                    >
+                      {project.status === 'overdue'
+                        ? `${Math.abs(project.daysRemaining)} days overdue`
+                        : project.daysRemaining === 0
+                        ? 'Due today'
+                        : `${project.daysRemaining} days left`}
+                    </p>
+                    <p className="text-xs text-[var(--muted-foreground)]">
+                      Due: {formatDate(project.dueDate)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

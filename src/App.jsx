@@ -11,6 +11,7 @@ import {
   TransactionsPage,
   BudgetsPage,
   ProjectsPage,
+  RecurringExpensesPage,
   SettingsPage,
 } from '@/pages';
 import './App.css';
@@ -34,6 +35,7 @@ function App() {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/transactions" element={<TransactionsPage />} />
               <Route path="/budgets" element={<BudgetsPage />} />
+              <Route path="/recurring-expenses" element={<RecurringExpensesPage />} />
               <Route path="/projects" element={<ProjectsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>

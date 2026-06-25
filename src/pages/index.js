@@ -6,4 +6,5 @@ export { default as DashboardPage } from './DashboardPage';
 export { default as TransactionsPage } from './TransactionsPage';
 export { default as BudgetsPage } from './BudgetsPage';
 export { default as ProjectsPage } from './ProjectsPage';
+export { default as RecurringExpensesPage } from './RecurringExpensesPage';
 export { default as SettingsPage } from './SettingsPage';

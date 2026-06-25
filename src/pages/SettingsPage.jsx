@@ -23,9 +23,9 @@ import { Badge } from '@/components/ui/Badge';
 import { useAuth } from '@/hooks/useAuth';
 import useThemeStore from '@/stores/themeStore';
 import useAuthStore from '@/stores/authStore';
-import { updateUserData } from '@/firebase/firestore';
-import { uploadProfileImage, uploadCompanyLogo } from '@/firebase/storage';
-import { getErrorMessage } from '@/utils/helpers';
+import { updateProfile as updateProfileData } from '@/firebase/firestore';
+import { uploadCompanyLogo } from '@/firebase/storage';
+import { getErrorMessage, CURRENCIES } from '@/utils/helpers';
 
 const profileSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
@@ -34,18 +34,17 @@ const profileSchema = z.object({
 });
 
 const currencies = [
+  { value: 'PKR', label: 'PKR - Pakistani Rupee' },
   { value: 'USD', label: 'USD - US Dollar' },
   { value: 'EUR', label: 'EUR - Euro' },
   { value: 'GBP', label: 'GBP - British Pound' },
-  { value: 'JPY', label: 'JPY - Japanese Yen' },
-  { value: 'CAD', label: 'CAD - Canadian Dollar' },
-  { value: 'AUD', label: 'AUD - Australian Dollar' },
-  { value: 'INR', label: 'INR - Indian Rupee' },
-  { value: 'CNY', label: 'CNY - Chinese Yuan' },
+  { value: 'AED', label: 'AED - UAE Dirham' },
+  { value: 'SAR', label: 'SAR - Saudi Riyal' },
 ];
 
 const SettingsPage = () => {
-  const { user, userData } = useAuth();
+  const { user } = useAuth();
+  const { activeProfileId, activeProfile, updateProfile } = useAuthStore();
   const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -53,8 +52,8 @@ const SettingsPage = () => {
   const [error, setError] = useState('');
   const fileInputRef = useRef(null);
 
-  const { palette, setPalette, setDarkMode, darkMode, getAllPalettes } = useThemeStore();
-  const themes = getAllPalettes();
+  const { palette, setPalette, setDarkMode, darkMode, getAllThemesMeta } = useThemeStore();
+  const themes = getAllThemesMeta();
 
   const {
     register,
@@ -64,21 +63,21 @@ const SettingsPage = () => {
   } = useForm({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      fullName: userData?.fullName || '',
-      companyName: userData?.companyName || '',
-      currency: userData?.currency || 'USD',
+      fullName: user?.displayName || '',
+      companyName: activeProfile?.companyName || '',
+      currency: activeProfile?.currency || 'PKR',
     },
   });
 
   useEffect(() => {
-    if (userData) {
+    if (activeProfile) {
       reset({
-        fullName: userData.fullName || '',
-        companyName: userData.companyName || '',
-        currency: userData.currency || 'USD',
+        fullName: user?.displayName || '',
+        companyName: activeProfile.companyName || '',
+        currency: activeProfile.currency || 'PKR',
       });
     }
-  }, [userData, reset]);
+  }, [activeProfile, user?.displayName, reset]);
 
   useEffect(() => {
     if (success) {
@@ -88,11 +87,15 @@ const SettingsPage = () => {
   }, [success]);
 
   const handleProfileSubmit = async (data) => {
+    if (!activeProfileId) return;
     setLoading(true);
     setError('');
     setSuccess('');
     try {
-      await updateUserData(user.uid, data);
+      await updateProfileData(user.uid, activeProfileId, {
+        ...data,
+        ...(activeProfile?.profileType === 'company' && { companyName: data.companyName }),
+      });
       setSuccess('Profile updated successfully');
     } catch (err) {
       setError(getErrorMessage(err));
@@ -103,19 +106,18 @@ const SettingsPage = () => {
 
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !activeProfileId) return;
 
     setUploading(true);
     setError('');
     try {
-      const isCompany = userData?.accountType === 'company';
-      const downloadUrl = isCompany
-        ? await uploadCompanyLogo(user.uid, file)
-        : await uploadProfileImage(user.uid, file);
+      const isCompany = activeProfile?.profileType === 'company';
+      const downloadUrl = await uploadCompanyLogo(user.uid, file);
 
-      const updateField = isCompany ? 'companyLogo' : 'profileImage';
-      await updateUserData(user.uid, { [updateField]: downloadUrl });
-      setSuccess('Image uploaded successfully');
+      if (isCompany) {
+        await updateProfileData(user.uid, activeProfileId, { companyLogo: downloadUrl });
+        setSuccess('Logo uploaded successfully');
+      }
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -125,8 +127,9 @@ const SettingsPage = () => {
 
   const handleThemeChange = async (themeKey) => {
     setPalette(themeKey);
+    if (!activeProfileId) return;
     try {
-      await updateUserData(user.uid, { themePalette: themeKey });
+      await updateProfileData(user.uid, activeProfileId, { themePalette: themeKey });
       setSuccess('Theme updated successfully');
     } catch (err) {
       console.error('Error updating theme:', err);
@@ -194,42 +197,48 @@ const SettingsPage = () => {
                   <form onSubmit={handleSubmit(handleProfileSubmit)} className="space-y-6">
                     <div className="flex items-center gap-4">
                       <div className="relative">
-                        {userData?.accountType === 'company' ? (
+                        {activeProfile?.profileType === 'company' ? (
                           <Avatar
-                            src={userData?.companyLogo || userData?.profileImage}
-                            name={userData?.companyName}
+                            src={activeProfile?.companyLogo}
+                            name={activeProfile?.companyName}
                             size="xl"
                           />
                         ) : (
-                          <Avatar src={userData?.profileImage} name={userData?.fullName} size="xl" />
+                          <Avatar src={user?.photoURL} name={user?.displayName} size="xl" />
                         )}
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={handleImageUpload}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={uploading}
-                          className="absolute -bottom-2 -right-2 p-2 bg-[var(--primary)] text-white rounded-full hover:opacity-90 transition-opacity"
-                        >
-                          {uploading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Camera className="h-4 w-4" />
-                          )}
-                        </button>
+                        {activeProfile?.profileType === 'company' && (
+                          <>
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={handleImageUpload}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => fileInputRef.current?.click()}
+                              disabled={uploading}
+                              className="absolute -bottom-2 -right-2 p-2 bg-[var(--primary)] text-white rounded-full hover:opacity-90 transition-opacity"
+                            >
+                              {uploading ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Camera className="h-4 w-4" />
+                              )}
+                            </button>
+                          </>
+                        )}
                       </div>
                       <div>
                         <p className="font-semibold text-[var(--foreground)]">
-                          {userData?.fullName}
+                          {activeProfile?.profileType === 'company'
+                            ? activeProfile?.companyName
+                            : user?.displayName}
                         </p>
-                        <p className="text-sm text-[var(--muted-foreground)]">{userData?.email}</p>
-                        <Badge variant="outline" className="mt-1">
-                          {userData?.accountType === 'company' ? 'Company Account' : 'Personal Account'}
+                        <p className="text-sm text-[var(--muted-foreground)]">{user?.email}</p>
+                        <Badge variant="outline" className="mt-1 capitalize">
+                          {activeProfile?.profileType} Account
                         </Badge>
                       </div>
                     </div>
@@ -242,7 +251,7 @@ const SettingsPage = () => {
                         error={errors.fullName?.message}
                       />
 
-                      {userData?.accountType === 'company' && (
+                      {activeProfile?.profileType === 'company' && (
                         <Input
                           {...register('companyName')}
                           label="Company Name"
@@ -419,7 +428,7 @@ const SettingsPage = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-medium text-[var(--foreground)]">Email Address</p>
-                          <p className="text-sm text-[var(--muted-foreground)]">{userData?.email}</p>
+                          <p className="text-sm text-[var(--muted-foreground)]">{user?.email}</p>
                         </div>
                         <Badge variant="outline">Primary</Badge>
                       </div>
@@ -430,13 +439,13 @@ const SettingsPage = () => {
                         <div>
                           <p className="font-medium text-[var(--foreground)]">Account Type</p>
                           <p className="text-sm text-[var(--muted-foreground)] capitalize">
-                            {userData?.accountType}
+                            {activeProfile?.profileType || 'personal'}
                           </p>
                         </div>
                         <Badge
-                          variant={userData?.accountType === 'company' ? 'secondary' : 'default'}
+                          variant={activeProfile?.profileType === 'company' ? 'secondary' : 'default'}
                         >
-                          {userData?.accountType}
+                          {activeProfile?.profileType || 'personal'}
                         </Badge>
                       </div>
                     </div>
@@ -446,8 +455,8 @@ const SettingsPage = () => {
                         <div>
                           <p className="font-medium text-[var(--foreground)]">Member Since</p>
                           <p className="text-sm text-[var(--muted-foreground)]">
-                            {userData?.createdAt?.toDate
-                              ? new Date(userData.createdAt.toDate()).toLocaleDateString('en-US', {
+                            {activeProfile?.createdAt?.toDate
+                              ? new Date(activeProfile.createdAt.toDate()).toLocaleDateString('en-US', {
                                   year: 'numeric',
                                   month: 'long',
                                   day: 'numeric',

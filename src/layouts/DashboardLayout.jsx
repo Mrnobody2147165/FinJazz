@@ -60,6 +60,9 @@ const DashboardLayout = () => {
   const [recurringExpenses, setRecurringExpenses] = useState([]);
   const navigate = useNavigate();
 
+  // Derived values - must be declared before any useEffect that uses them
+  const isCompany = activeProfile?.profileType === 'company';
+
   // Subscribe to profiles
   useEffect(() => {
     if (!user?.uid) return;
@@ -103,8 +106,6 @@ const DashboardLayout = () => {
     if (!user?.uid || !activeProfileId || !isCompany || projects.length === 0) return;
     checkProjectDeadlines(user.uid, activeProfileId, projects);
   }, [user?.uid, activeProfileId, isCompany, projects.length]);
-
-  const isCompany = activeProfile?.profileType === 'company';
 
   const navItems = [
     {

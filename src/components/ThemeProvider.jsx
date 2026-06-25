@@ -12,53 +12,108 @@ const ThemeProvider = ({ children }) => {
 
     // Apply all theme variables to CSS custom properties
     const cssVars = {
-      '--primary': theme.primary,
-      '--primary-foreground': theme.primaryForeground,
-      '--secondary': theme.secondary,
-      '--secondary-foreground': theme.secondaryForeground,
+      // Core palette
       '--background': theme.background,
-      '--foreground': theme.foreground,
+      '--surface': theme.surface,
       '--card': theme.card,
-      '--card-foreground': theme.cardForeground,
-      '--popover': theme.popover,
-      '--popover-foreground': theme.popoverForeground,
+      '--card-hover': theme.cardHover,
+      '--foreground': theme.foreground,
       '--muted': theme.muted,
       '--muted-foreground': theme.mutedForeground,
       '--border': theme.border,
-      '--input': theme.input,
-      '--ring': theme.ring,
+      '--border-hover': theme.borderHover,
+
+      // Primary
+      '--primary': theme.primary,
+      '--primary-hover': theme.primaryHover,
+      '--primary-foreground': theme.primaryForeground,
+      '--primary-muted': theme.primaryMuted,
+      '--primary-accent': theme.primaryAccent,
+
+      // Secondary
+      '--secondary': theme.secondary,
+      '--secondary-hover': theme.secondaryHover,
+      '--secondary-foreground': theme.secondaryForeground,
+      '--secondary-muted': theme.secondaryMuted,
+      '--secondary-accent': theme.secondaryAccent,
+
+      // Gradients
+      '--gradient-primary': theme.gradientPrimary,
+      '--gradient-secondary': theme.gradientSecondary,
+      '--gradient-card': theme.gradientCard,
+      '--gradient-sidebar': theme.gradientSidebar,
+      '--gradient-hero': theme.gradientHero,
+
+      // Shadows
+      '--shadow': theme.shadow,
+      '--shadow-md': theme.shadowMd,
+      '--shadow-lg': theme.shadowLg,
+      '--shadow-primary': theme.shadowPrimary,
+      '--shadow-secondary': theme.shadowSecondary,
+
+      // Semantic colors
       '--success': theme.success,
       '--success-foreground': theme.successForeground,
+      '--success-muted': theme.successMuted,
       '--warning': theme.warning,
       '--warning-foreground': theme.warningForeground,
-      '--error': theme.error,
-      '--error-foreground': theme.errorForeground,
-      // Color ramps
-      '--primary-50': theme.primary50,
-      '--primary-100': theme.primary100,
-      '--primary-200': theme.primary200,
-      '--primary-300': theme.primary300,
-      '--primary-400': theme.primary400,
-      '--primary-500': theme.primary500,
-      '--primary-600': theme.primary600,
-      '--primary-700': theme.primary700,
-      '--primary-800': theme.primary800,
-      '--primary-900': theme.primary900,
-      '--secondary-50': theme.secondary50,
-      '--secondary-100': theme.secondary100,
-      '--secondary-200': theme.secondary200,
-      '--secondary-300': theme.secondary300,
-      '--secondary-400': theme.secondary400,
-      '--secondary-500': theme.secondary500,
-      '--secondary-600': theme.secondary600,
-      '--secondary-700': theme.secondary700,
-      '--secondary-800': theme.secondary800,
-      '--secondary-900': theme.secondary900,
+      '--warning-muted': theme.warningMuted,
+      '--danger': theme.danger,
+      '--danger-foreground': theme.dangerForeground,
+      '--danger-muted': theme.dangerMuted,
+
+      // UI specifics
+      '--input': theme.input,
+      '--input-border': theme.inputBorder,
+      '--input-focus': theme.inputFocus,
+      '--ring': theme.ring,
+      '--ring-offset': theme.ringOffset,
+
+      // Sidebar
+      '--sidebar-bg': theme.sidebarBg,
+      '--sidebar-hover': theme.sidebarHover,
+      '--sidebar-active': theme.sidebarActive,
+      '--sidebar-text': theme.sidebarText,
+      '--sidebar-icon': theme.sidebarIcon,
+
+      // KPI cards
+      '--kpi-income-bg': theme.kpiIncomeBg,
+      '--kpi-income-border': theme.kpiIncomeBorder,
+      '--kpi-expense-bg': theme.kpiExpenseBg,
+      '--kpi-expense-border': theme.kpiExpenseBorder,
+      '--kpi-balance-bg': theme.kpiBalanceBg,
+      '--kpi-balance-border': theme.kpiBalanceBorder,
+
+      // Border styling
+      '--radius': theme.borderRadius,
+      '--radius-sm': theme.borderRadiusSm,
+      '--radius-lg': theme.borderRadiusLg,
+
+      // Typography
+      '--font-display': theme.fontDisplay,
+      '--font-body': theme.fontBody,
+
+      // Transitions
+      '--transition': theme.transition,
+
+      // Chart palette as individual variables
+      '--chart-1': theme.chart[0],
+      '--chart-2': theme.chart[1],
+      '--chart-3': theme.chart[2],
+      '--chart-4': theme.chart[3],
+      '--chart-5': theme.chart[4],
+      '--chart-6': theme.chart[5],
+      '--chart-7': theme.chart[6],
+      '--chart-8': theme.chart[7],
     };
 
+    // Apply all variables
     Object.entries(cssVars).forEach(([key, value]) => {
       root.style.setProperty(key, value);
     });
+
+    // Store chart palette as a CSS custom property array (encoded)
+    root.style.setProperty('--chart-palette', JSON.stringify(theme.chart));
 
     // Toggle dark class on root element
     if (darkMode) {
@@ -67,7 +122,10 @@ const ThemeProvider = ({ children }) => {
       root.classList.remove('dark');
     }
 
-    console.log('[ThemeProvider] Applied theme:', { palette, darkMode });
+    // Apply theme class for theme-specific styling
+    root.setAttribute('data-theme', palette);
+
+    console.log('[ThemeProvider] Applied theme:', { palette, darkMode, chart: theme.chart.slice(0, 4) });
   }, [palette, darkMode]);
 
   return children;

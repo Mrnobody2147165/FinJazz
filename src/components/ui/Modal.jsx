@@ -13,7 +13,7 @@ const Modal = ({ isOpen, onClose, children, title, className }) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
             onClick={onClose}
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -23,7 +23,7 @@ const Modal = ({ isOpen, onClose, children, title, className }) => {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ duration: 0.2 }}
               className={cn(
-                'relative w-full max-w-lg bg-[var(--card)] rounded-xl shadow-2xl border border-[var(--border)] p-6 max-h-[90vh] overflow-y-auto',
+                'relative w-full max-w-lg bg-[var(--card)] rounded-[var(--radius-lg)] shadow-[var(--shadow-lg)] border border-[var(--border)] p-6 max-h-[90vh] overflow-y-auto',
                 className
               )}
             >

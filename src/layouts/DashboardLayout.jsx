@@ -17,16 +17,16 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { useAuth } from '@/hooks/useAuth';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import useThemeStore from '@/stores/themeStore';
 
 const DashboardLayout = () => {
   const { userData, handleLogout } = useAuth();
-  const { darkMode, toggleDarkMode, getPalette } = useThemeStore();
+  const themeColors = useThemeColors();
+  const { darkMode, toggleDarkMode } = useThemeStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const navigate = useNavigate();
-
-  const palette = getPalette();
 
   const isCompany = userData?.accountType === 'company';
 
@@ -69,11 +69,12 @@ const DashboardLayout = () => {
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
+      {/* Mobile header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-30 flex items-center justify-between p-4 bg-[var(--card)] border-b border-[var(--border)]">
         <button onClick={() => setSidebarOpen(true)} className="text-[var(--foreground)]">
           <Menu className="h-6 w-6" />
         </button>
-        <h1 className="text-lg font-bold">FinJazz</h1>
+        <h1 className="text-lg font-bold gradient-text">FinJazz</h1>
         <Avatar
           src={userData?.profileImage}
           name={userData?.fullName}
@@ -81,6 +82,7 @@ const DashboardLayout = () => {
         />
       </div>
 
+      {/* Mobile sidebar overlay */}
       <AnimatePresence>
         {sidebarOpen && (
           <>
@@ -99,9 +101,7 @@ const DashboardLayout = () => {
               className="lg:hidden fixed inset-y-0 left-0 z-50 w-72 bg-[var(--card)] border-r border-[var(--border)]"
             >
               <div className="flex items-center justify-between p-4 border-b border-[var(--border)]">
-                <h1 className="text-xl font-bold" style={{ color: palette.primary }}>
-                  FinJazz
-                </h1>
+                <h1 className="text-xl font-bold gradient-text">FinJazz</h1>
                 <button onClick={() => setSidebarOpen(false)} className="text-[var(--foreground)]">
                   <X className="h-6 w-6" />
                 </button>
@@ -113,10 +113,10 @@ const DashboardLayout = () => {
                     to={item.href}
                     onClick={() => setSidebarOpen(false)}
                     className={({ isActive }) =>
-                      `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                      `flex items-center gap-3 px-4 py-3 rounded-[var(--radius-sm)] transition-all ${
                         isActive
-                          ? 'bg-[var(--primary)] text-white'
-                          : 'text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]'
+                          ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--primary-hover)] text-[var(--primary-foreground)] shadow-[var(--shadow-primary)]'
+                          : 'text-[var(--muted-foreground)] hover:bg-[var(--surface)] hover:text-[var(--foreground)]'
                       }`
                     }
                   >
@@ -130,11 +130,13 @@ const DashboardLayout = () => {
         )}
       </AnimatePresence>
 
-      <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:w-64 lg:flex-col bg-[var(--card)] border-r border-[var(--border)]">
-        <div className="flex items-center justify-between h-16 px-6 border-b border-[var(--border)]">
-          <h1 className="text-xl font-bold" style={{ color: palette.primary }}>
-            FinJazz
-          </h1>
+      {/* Desktop sidebar - with theme-gradient background */}
+      <aside
+        className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:w-64 lg:flex-col"
+        style={{ background: themeColors.gradientSidebar }}
+      >
+        <div className="flex items-center justify-between h-16 px-6 border-b border-white/10">
+          <h1 className="text-xl font-bold text-[var(--sidebar-text)]">FinJazz</h1>
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
@@ -143,10 +145,10 @@ const DashboardLayout = () => {
               key={item.name}
               to={item.href}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                `flex items-center gap-3 px-4 py-3 rounded-[var(--radius-sm)] transition-all ${
                   isActive
-                    ? 'bg-[var(--primary)] text-white'
-                    : 'text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]'
+                    ? 'bg-[var(--sidebar-active)] text-[var(--sidebar-text)] shadow-[var(--shadow-primary)]'
+                    : 'text-[var(--sidebar-icon)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-text)]'
                 }`
               }
             >
@@ -156,10 +158,10 @@ const DashboardLayout = () => {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-[var(--border)]">
+        <div className="p-4 border-t border-white/10">
           <button
             onClick={toggleDarkMode}
-            className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+            className="flex items-center gap-3 w-full px-4 py-3 rounded-[var(--radius-sm)] text-[var(--sidebar-icon)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-text)] transition-all"
           >
             {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             {darkMode ? 'Light Mode' : 'Dark Mode'}
@@ -167,13 +169,19 @@ const DashboardLayout = () => {
         </div>
       </aside>
 
+      {/* Main content area */}
       <div className="lg:pl-64">
-        <header className="hidden lg:flex items-center justify-between h-16 px-6 bg-[var(--card)]/50 backdrop-blur-sm border-b border-[var(--border)]">
-          <div />
+        {/* Desktop header */}
+        <header className="hidden lg:flex items-center justify-between h-16 px-6 bg-[var(--card)]/80 backdrop-blur-sm border-b border-[var(--border)]">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-[var(--muted-foreground)]">
+              {userData?.accountType === 'company' ? 'Company Dashboard' : 'Personal Dashboard'}
+            </span>
+          </div>
           <div className="flex items-center gap-4">
             <button
               onClick={toggleDarkMode}
-              className="p-2 rounded-lg text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+              className="p-2 rounded-[var(--radius-sm)] text-[var(--muted-foreground)] hover:bg-[var(--surface)] hover:text-[var(--foreground)] transition-all"
             >
               {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </button>
@@ -181,7 +189,7 @@ const DashboardLayout = () => {
             <div className="relative">
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[var(--muted)] transition-colors"
+                className="flex items-center gap-2 px-3 py-2 rounded-[var(--radius-sm)] hover:bg-[var(--surface)] transition-all"
               >
                 <Avatar src={userData?.profileImage} name={userData?.fullName} size="sm" />
                 <span className="text-sm font-medium text-[var(--foreground)]">
@@ -196,21 +204,21 @@ const DashboardLayout = () => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
-                    className="absolute right-0 mt-2 w-48 bg-[var(--card)] rounded-lg border border-[var(--border)] shadow-lg overflow-hidden"
+                    className="absolute right-0 mt-2 w-48 bg-[var(--card)] rounded-[var(--radius)] border border-[var(--border)] shadow-[var(--shadow-lg)] overflow-hidden"
                   >
                     <button
                       onClick={() => {
                         setUserMenuOpen(false);
                         navigate('/settings');
                       }}
-                      className="flex items-center gap-2 w-full px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
+                      className="flex items-center gap-2 w-full px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--surface)] transition-all"
                     >
                       <Settings className="h-4 w-4" />
                       Settings
                     </button>
                     <button
                       onClick={handleLogoutClick}
-                      className="flex items-center gap-2 w-full px-4 py-3 text-sm text-red-500 hover:bg-red-500/10 transition-colors"
+                      className="flex items-center gap-2 w-full px-4 py-3 text-sm text-[var(--danger)] hover:bg-[var(--danger)]/10 transition-all"
                     >
                       <LogOut className="h-4 w-4" />
                       Log out
@@ -222,7 +230,7 @@ const DashboardLayout = () => {
           </div>
         </header>
 
-        <main className="p-4 lg:p-8">
+        <main className="p-4 lg:p-8 min-h-[calc(100vh-4rem)]">
           <Outlet />
         </main>
       </div>

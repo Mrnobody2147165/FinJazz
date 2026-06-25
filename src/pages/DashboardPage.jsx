@@ -120,17 +120,16 @@ const DashboardPage = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <Card className="relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-[var(--success)]/10 rounded-full -mr-10 -mt-10" />
+            <Card className="relative overflow-hidden" style={{ background: 'var(--kpi-income-bg)', borderLeft: '4px solid var(--kpi-income-border)' }}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-[var(--muted-foreground)]">Revenue</p>
-                    <p className="text-2xl font-bold text-[var(--foreground)] mt-1">
+                    <p className="text-2xl font-bold text-[var(--success)] mt-1">
                       {formatCurrency(totalRevenue, currency)}
                     </p>
                   </div>
-                  <div className="p-3 rounded-full bg-[var(--success)]/10">
+                  <div className="p-3 rounded-full bg-[var(--success)]/20 shadow-[var(--shadow-primary)]">
                     <TrendingUp className="h-5 w-5 text-[var(--success)]" />
                   </div>
                 </div>
@@ -143,18 +142,17 @@ const DashboardPage = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <Card className="relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-[var(--error)]/10 rounded-full -mr-10 -mt-10" />
+            <Card className="relative overflow-hidden" style={{ background: 'var(--kpi-expense-bg)', borderLeft: '4px solid var(--kpi-expense-border)' }}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-[var(--muted-foreground)]">Expenses</p>
-                    <p className="text-2xl font-bold text-[var(--foreground)] mt-1">
+                    <p className="text-2xl font-bold text-[var(--danger)] mt-1">
                       {formatCurrency(totalExpenses, currency)}
                     </p>
                   </div>
-                  <div className="p-3 rounded-full bg-[var(--error)]/10">
-                    <TrendingDown className="h-5 w-5 text-[var(--error)]" />
+                  <div className="p-3 rounded-full bg-[var(--danger)]/20 shadow-[var(--shadow-secondary)]">
+                    <TrendingDown className="h-5 w-5 text-[var(--danger)]" />
                   </div>
                 </div>
               </CardContent>
@@ -166,18 +164,17 @@ const DashboardPage = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <Card className="relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-[var(--primary)]/10 rounded-full -mr-10 -mt-10" />
+            <Card className="relative overflow-hidden" style={{ background: 'var(--kpi-balance-bg)', borderLeft: '4px solid var(--kpi-balance-border)' }}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-[var(--muted-foreground)]">Profit</p>
-                    <p className={`text-2xl font-bold mt-1 ${profit >= 0 ? 'text-[var(--success)]' : 'text-[var(--error)]'}`}>
+                    <p className={`text-2xl font-bold mt-1 ${profit >= 0 ? 'text-[var(--success)]' : 'text-[var(--danger)]'}`}>
                       {formatCurrency(profit, currency)}
                     </p>
                   </div>
-                  <div className={`p-3 rounded-full ${profit >= 0 ? 'bg-[var(--success)]/10' : 'bg-[var(--error)]/10'}`}>
-                    <Wallet className={`h-5 w-5 ${profit >= 0 ? 'text-[var(--success)]' : 'text-[var(--error)]'}`} />
+                  <div className={`p-3 rounded-full shadow-[var(--shadow-primary)] ${profit >= 0 ? 'bg-[var(--success)]/20' : 'bg-[var(--danger)]/20'}`}>
+                    <Wallet className={`h-5 w-5 ${profit >= 0 ? 'text-[var(--success)]' : 'text-[var(--danger)]'}`} />
                   </div>
                 </div>
               </CardContent>
@@ -189,8 +186,7 @@ const DashboardPage = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <Card className="relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-[var(--secondary)]/10 rounded-full -mr-10 -mt-10" />
+            <Card className="relative overflow-hidden bg-[var(--surface)] border-l-4 border-[var(--secondary)]">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -199,7 +195,7 @@ const DashboardPage = () => {
                       {activeProjects}
                     </p>
                   </div>
-                  <div className="p-3 rounded-full bg-[var(--secondary)]/10">
+                  <div className="p-3 rounded-full bg-[var(--secondary)]/20 shadow-[var(--shadow-secondary)]">
                     <PiggyBank className="h-5 w-5 text-[var(--secondary)]" />
                   </div>
                 </div>
@@ -327,8 +323,7 @@ const DashboardPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <Card className="relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-[var(--primary)]/10 rounded-full -mr-10 -mt-10" />
+          <Card className="relative overflow-hidden" style={{ background: 'var(--kpi-balance-bg)', borderLeft: '4px solid var(--kpi-balance-border)' }}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -337,7 +332,7 @@ const DashboardPage = () => {
                     {formatCurrency(totals.balance, currency)}
                   </p>
                 </div>
-                <div className="p-3 rounded-full bg-[var(--primary)]/10">
+                <div className="p-3 rounded-full bg-[var(--primary)]/20 shadow-[var(--shadow-primary)]">
                   <Wallet className="h-5 w-5 text-[var(--primary)]" />
                 </div>
               </div>
@@ -350,8 +345,7 @@ const DashboardPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Card className="relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-[var(--success)]/10 rounded-full -mr-10 -mt-10" />
+          <Card className="relative overflow-hidden" style={{ background: 'var(--kpi-income-bg)', borderLeft: '4px solid var(--kpi-income-border)' }}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -360,7 +354,7 @@ const DashboardPage = () => {
                     {formatCurrency(totals.income, currency)}
                   </p>
                 </div>
-                <div className="p-3 rounded-full bg-[var(--success)]/10">
+                <div className="p-3 rounded-full bg-[var(--success)]/20 shadow-[var(--shadow-primary)]">
                   <TrendingUp className="h-5 w-5 text-[var(--success)]" />
                 </div>
               </div>
@@ -373,18 +367,17 @@ const DashboardPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <Card className="relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-[var(--error)]/10 rounded-full -mr-10 -mt-10" />
+          <Card className="relative overflow-hidden" style={{ background: 'var(--kpi-expense-bg)', borderLeft: '4px solid var(--kpi-expense-border)' }}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-[var(--muted-foreground)]">Total Expenses</p>
-                  <p className="text-2xl font-bold text-[var(--error)] mt-1">
+                  <p className="text-2xl font-bold text-[var(--danger)] mt-1">
                     {formatCurrency(totals.expenses, currency)}
                   </p>
                 </div>
-                <div className="p-3 rounded-full bg-[var(--error)]/10">
-                  <TrendingDown className="h-5 w-5 text-[var(--error)]" />
+                <div className="p-3 rounded-full bg-[var(--danger)]/20 shadow-[var(--shadow-secondary)]">
+                  <TrendingDown className="h-5 w-5 text-[var(--danger)]" />
                 </div>
               </div>
             </CardContent>
@@ -396,17 +389,16 @@ const DashboardPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <Card className="relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-[var(--secondary)]/10 rounded-full -mr-10 -mt-10" />
+          <Card className="relative overflow-hidden bg-[var(--surface)] border-l-4 border-[var(--secondary)]">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-[var(--muted-foreground)]">Savings</p>
-                  <p className={`text-2xl font-bold mt-1 ${totals.savings >= 0 ? 'text-[var(--success)]' : 'text-[var(--error)]'}`}>
+                  <p className={`text-2xl font-bold mt-1 ${totals.savings >= 0 ? 'text-[var(--success)]' : 'text-[var(--danger)]'}`}>
                     {formatCurrency(totals.savings, currency)}
                   </p>
                 </div>
-                <div className="p-3 rounded-full bg-[var(--secondary)]/10">
+                <div className="p-3 rounded-full bg-[var(--secondary)]/20 shadow-[var(--shadow-secondary)]">
                   <PiggyBank className="h-5 w-5 text-[var(--secondary)]" />
                 </div>
               </div>

@@ -12,7 +12,7 @@ const Loading = ({ className, size = 'default' }) => {
     <div className={cn('flex items-center justify-center', className)}>
       <motion.div
         className={cn(
-          'rounded-full border-t-[var(--primary)] border-r-[var(--primary)] border-b-[var(--muted)] border-l-[var(--muted)]',
+          'rounded-full border-t-[var(--primary)] border-r-[var(--secondary)] border-b-[var(--muted)] border-l-[var(--muted)]',
           sizeClasses[size]
         )}
         animate={{ rotate: 360 }}
@@ -24,9 +24,11 @@ const Loading = ({ className, size = 'default' }) => {
 
 const LoadingOverlay = ({ message }) => {
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[var(--background)]/80 backdrop-blur-sm">
-      <Loading size="lg" />
-      {message && <p className="mt-4 text-[var(--muted-foreground)]">{message}</p>}
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[var(--background)] backdrop-blur-sm">
+      <div className="bg-[var(--card)] p-8 rounded-[var(--radius-lg)] shadow-[var(--shadow-lg)] flex flex-col items-center">
+        <Loading size="lg" />
+        {message && <p className="mt-4 text-[var(--muted-foreground)]">{message}</p>}
+      </div>
     </div>
   );
 };

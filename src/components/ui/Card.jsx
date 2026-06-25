@@ -3,7 +3,7 @@ import { cn } from '@/utils/helpers';
 const Card = ({ className, ...props }) => (
   <div
     className={cn(
-      'rounded-xl border border-[var(--border)] bg-[var(--card)] text-[var(--card-foreground)] shadow-sm transition-all',
+      'rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] shadow-[var(--shadow)] transition-all hover:border-[var(--border-hover)] hover:shadow-[var(--shadow-md)]',
       className
     )}
     {...props}
@@ -15,7 +15,7 @@ const CardHeader = ({ className, ...props }) => (
 );
 
 const CardTitle = ({ className, ...props }) => (
-  <h3 className={cn('text-lg font-semibold leading-none tracking-tight', className)} {...props} />
+  <h3 className={cn('text-lg font-semibold leading-none tracking-tight text-[var(--foreground)]', className)} {...props} />
 );
 
 const CardDescription = ({ className, ...props }) => (

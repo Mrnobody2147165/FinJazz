@@ -91,14 +91,29 @@ const TransactionsPage = () => {
   }, [searchParams, setSearchParams]);
 
   useEffect(() => {
-    if (!user?.uid || !activeProfileId) return;
-
-    const unsubscribe = subscribeToTransactions(user.uid, activeProfileId, (data) => {
-      setTransactions(data);
+    if (!user?.uid || !activeProfileId) {
       setLoading(false);
+      return;
+    }
+
+    let mounted = true;
+    const unsubscribe = subscribeToTransactions(user.uid, activeProfileId, (data) => {
+      if (mounted) {
+        setTransactions(data);
+        setLoading(false);
+      }
     });
 
-    return () => unsubscribe();
+    // Safety timeout
+    const timeout = setTimeout(() => {
+      if (mounted) setLoading(false);
+    }, 3000);
+
+    return () => {
+      mounted = false;
+      clearTimeout(timeout);
+      unsubscribe();
+    };
   }, [user?.uid, activeProfileId]);
 
   useEffect(() => {

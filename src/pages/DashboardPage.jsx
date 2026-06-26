@@ -47,7 +47,7 @@ import { useThemeColors } from '@/hooks/useThemeColors';
 
 const DashboardPage = () => {
   const { user } = useAuth();
-  const { activeProfileId, activeProfile } = useAuthStore();
+  const { activeProfileId, activeProfile, profiles } = useAuthStore();
   const themeColors = useThemeColors();
   const [transactions, setTransactions] = useState([]);
   const [budgets, setBudgets] = useState([]);
@@ -58,25 +58,36 @@ const DashboardPage = () => {
   const currency = activeProfile?.currency || 'PKR';
 
   useEffect(() => {
-    if (!user?.uid || !activeProfileId) return;
+    if (!user?.uid || !activeProfileId) {
+      setLoading(false);
+      return;
+    }
+
+    let mounted = true;
 
     const unsubTransactions = subscribeToTransactions(user.uid, activeProfileId, (data) => {
-      setTransactions(data);
-      setLoading(false);
+      if (mounted) setTransactions(data);
     });
 
     const unsubBudgets = subscribeToBudgets(user.uid, activeProfileId, (data) => {
-      setBudgets(data);
+      if (mounted) setBudgets(data);
     });
 
     let unsubProjects;
     if (isCompany) {
       unsubProjects = subscribeToProjects(user.uid, activeProfileId, (data) => {
-        setProjects(data);
+        if (mounted) setProjects(data);
       });
     }
 
+    // Set loading false after a short delay to allow data to stream in
+    const loadingTimer = setTimeout(() => {
+      if (mounted) setLoading(false);
+    }, 100);
+
     return () => {
+      mounted = false;
+      clearTimeout(loadingTimer);
       unsubTransactions();
       unsubBudgets();
       if (unsubProjects) unsubProjects();
@@ -161,7 +172,7 @@ const DashboardPage = () => {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-1 md: grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
             <Skeleton key={i} className="h-32" />
           ))}
@@ -170,6 +181,31 @@ const DashboardPage = () => {
           <Skeleton className="h-80" />
           <Skeleton className="h-80" />
         </div>
+      </div>
+    );
+  }
+
+  // Handle case where no profile is selected
+  if (!activeProfileId && profiles.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <EmptyState
+          icon={Wallet}
+          title="No profiles yet"
+          description="Complete onboarding to get started"
+        />
+      </div>
+    );
+  }
+
+  if (!activeProfileId) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <EmptyState
+          icon={Wallet}
+          title="Select a profile"
+          description="Choose a profile from the sidebar to view your dashboard"
+        />
       </div>
     );
   }

@@ -40,7 +40,8 @@ import {
 } from '@/firebase/firestore';
 
 const DashboardLayout = () => {
-  const { userData, handleLogout } = useAuth();
+  const auth = useAuth();
+  const { userData, handleLogout } = auth;
   const themeColors = useThemeColors();
   const { darkMode, toggleDarkMode } = useThemeStore();
   const {
@@ -60,31 +61,34 @@ const DashboardLayout = () => {
   const [recurringExpenses, setRecurringExpenses] = useState([]);
   const navigate = useNavigate();
 
+  // Use Firebase user uid for Firestore operations
+  const userId = user?.uid;
+
   // Derived values - must be declared before any useEffect that uses them
   const isCompany = activeProfile?.profileType === 'company';
 
   // Subscribe to profiles
   useEffect(() => {
-    if (!user?.uid) return;
-    return subscribeToProfiles(user.uid, setProfiles);
-  }, [user?.uid]);
+    if (!userId) return;
+    return subscribeToProfiles(userId, setProfiles);
+  }, [userId]);
 
   // Subscribe to notifications
   useEffect(() => {
-    if (!user?.uid) return;
-    return subscribeToNotifications(user.uid, setNotifications);
-  }, [user?.uid]);
+    if (!userId) return;
+    return subscribeToNotifications(userId, setNotifications);
+  }, [userId]);
 
   // Subscribe to active profile data
   useEffect(() => {
-    if (!user?.uid || !activeProfileId) return;
+    if (!userId || !activeProfileId) return;
 
-    const unsubTransactions = subscribeToTransactions(user.uid, activeProfileId, setTransactions);
-    const unsubBudgets = subscribeToBudgets(user.uid, activeProfileId, setBudgets);
-    const unsubRecurring = subscribeToRecurringExpenses(user.uid, activeProfileId, setRecurringExpenses);
+    const unsubTransactions = subscribeToTransactions(userId, activeProfileId, setTransactions);
+    const unsubBudgets = subscribeToBudgets(userId, activeProfileId, setBudgets);
+    const unsubRecurring = subscribeToRecurringExpenses(userId, activeProfileId, setRecurringExpenses);
     let unsubProjects;
     if (activeProfile?.profileType === 'company') {
-      unsubProjects = subscribeToProjects(user.uid, activeProfileId, setProjects);
+      unsubProjects = subscribeToProjects(userId, activeProfileId, setProjects);
     }
 
     return () => {
@@ -93,19 +97,19 @@ const DashboardLayout = () => {
       unsubRecurring();
       if (unsubProjects) unsubProjects();
     };
-  }, [user?.uid, activeProfileId, activeProfile?.profileType]);
+  }, [userId, activeProfileId, activeProfile?.profileType]);
 
   // Check budget alerts when transactions or budgets change
   useEffect(() => {
-    if (!user?.uid || !activeProfileId || transactions.length === 0 || budgets.length === 0) return;
-    checkBudgetAlerts(user.uid, activeProfileId, transactions, budgets);
-  }, [user?.uid, activeProfileId, transactions.length, budgets.length]);
+    if (!userId || !activeProfileId || transactions.length === 0 || budgets.length === 0) return;
+    checkBudgetAlerts(userId, activeProfileId, transactions, budgets);
+  }, [userId, activeProfileId, transactions.length, budgets.length]);
 
   // Check project deadlines when projects change (company only)
   useEffect(() => {
-    if (!user?.uid || !activeProfileId || !isCompany || projects.length === 0) return;
-    checkProjectDeadlines(user.uid, activeProfileId, projects);
-  }, [user?.uid, activeProfileId, isCompany, projects.length]);
+    if (!userId || !activeProfileId || !isCompany || projects.length === 0) return;
+    checkProjectDeadlines(userId, activeProfileId, projects);
+  }, [userId, activeProfileId, isCompany, projects.length]);
 
   const navItems = [
     {
@@ -150,15 +154,18 @@ const DashboardLayout = () => {
   };
 
   const handleMarkRead = async (notificationId) => {
-    await markNotificationRead(user.uid, notificationId);
+    if (!userId) return;
+    await markNotificationRead(userId, notificationId);
   };
 
   const handleMarkAllRead = async () => {
-    await markAllNotificationsRead(user.uid);
+    if (!userId) return;
+    await markAllNotificationsRead(userId);
   };
 
   const handleDeleteNotification = async (notificationId) => {
-    await deleteNotification(user.uid, notificationId);
+    if (!userId) return;
+    await deleteNotification(userId, notificationId);
   };
 
   return (

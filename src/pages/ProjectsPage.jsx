@@ -73,14 +73,29 @@ const ProjectsPage = () => {
   });
 
   useEffect(() => {
-    if (!user?.uid || !activeProfileId) return;
+    if (!user?.uid || !activeProfileId) {
+      setLoading(false);
+      return;
+    }
+
+    let mounted = true;
 
     const unsubscribe = subscribeToProjects(user.uid, activeProfileId, (data) => {
-      setProjects(data);
-      setLoading(false);
+      if (mounted) {
+        setProjects(data);
+        setLoading(false);
+      }
     });
 
-    return () => unsubscribe();
+    const timeout = setTimeout(() => {
+      if (mounted) setLoading(false);
+    }, 3000);
+
+    return () => {
+      mounted = false;
+      clearTimeout(timeout);
+      unsubscribe();
+    };
   }, [user?.uid, activeProfileId]);
 
   useEffect(() => {

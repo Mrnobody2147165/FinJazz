@@ -1,13 +1,13 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '@/firebase/config';
-import { getUserData } from '@/firebase/firestore';
+import { getUserData, getProfiles } from '@/firebase/firestore';
 import useAuthStore from '@/stores/authStore';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const { user, userData, setUser, setUserData, setLoading, logout } = useAuthStore();
+  const { user, userData, setUser, setUserData, setLoading, logout, setProfiles, setActiveProfile, activeProfileId } = useAuthStore();
   const [initialLoad, setInitialLoad] = useState(true);
 
   console.log('[AuthProvider] State:', {
@@ -48,6 +48,19 @@ export const AuthProvider = ({ children }) => {
 
           if (data) {
             setUserData(data);
+
+            // Load profiles and set active profile
+            if (data.onboardingComplete) {
+              try {
+                const profiles = await getProfiles(firebaseUser.uid);
+                setProfiles(profiles);
+                if (profiles.length > 0 && !activeProfileId) {
+                  setActiveProfile(profiles[0].id);
+                }
+              } catch (profileError) {
+                console.error('[AuthProvider] Error loading profiles:', profileError);
+              }
+            }
           } else {
             console.warn(
               '[AuthProvider] No Firestore profile found. Creating fallback profile.'
@@ -67,6 +80,7 @@ export const AuthProvider = ({ children }) => {
         } else {
           setUser(null);
           setUserData(null);
+          setProfiles([]);
         }
       } catch (error) {
         console.error('[AuthProvider] Error:', error);
@@ -80,6 +94,7 @@ export const AuthProvider = ({ children }) => {
           currency: 'USD',
           onboardingComplete: false,
         });
+        setProfiles([]);
       } finally {
         if (mounted) {
           setLoading(false);

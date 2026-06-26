@@ -70,22 +70,35 @@ const BudgetsPage = () => {
   });
 
   useEffect(() => {
-    if (!user?.uid || !activeProfileId) return;
+    if (!user?.uid || !activeProfileId) {
+      setLoading(false);
+      return;
+    }
+
+    let mounted = true;
 
     const unsubBudget = subscribeToBudgets(user.uid, activeProfileId, (data) => {
-      setBudgets(data);
+      if (mounted) setBudgets(data);
     });
 
     const unsubTransactions = subscribeToTransactions(user.uid, activeProfileId, (data) => {
-      setTransactions(data);
-      setLoading(false);
+      if (mounted) {
+        setTransactions(data);
+        setLoading(false);
+      }
     });
 
+    const timeout = setTimeout(() => {
+      if (mounted) setLoading(false);
+    }, 3000);
+
     return () => {
+      mounted = false;
+      clearTimeout(timeout);
       unsubBudget();
       unsubTransactions();
     };
-  }, [user?.uid]);
+  }, [user?.uid, activeProfileId]);
 
   useEffect(() => {
     if (editingBudget) {

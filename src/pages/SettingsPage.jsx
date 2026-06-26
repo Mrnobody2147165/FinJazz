@@ -43,8 +43,10 @@ const currencies = [
 ];
 
 const SettingsPage = () => {
-  const { user } = useAuth();
-  const { activeProfileId, activeProfile, updateProfile } = useAuthStore();
+  const auth = useAuth();
+  const { activeProfileId, activeProfile, updateProfile: updateProfileStore, user: storeUser } = useAuthStore();
+  // Use Firebase user from auth store ( Zustand persisted)
+  const user = storeUser || auth.user;
   const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -87,15 +89,17 @@ const SettingsPage = () => {
   }, [success]);
 
   const handleProfileSubmit = async (data) => {
-    if (!activeProfileId) return;
+    if (!activeProfileId || !user?.uid) return;
     setLoading(true);
     setError('');
     setSuccess('');
     try {
-      await updateProfileData(user.uid, activeProfileId, {
+      const updateData = {
         ...data,
         ...(activeProfile?.profileType === 'company' && { companyName: data.companyName }),
-      });
+      };
+      await updateProfileData(user.uid, activeProfileId, updateData);
+      updateProfileStore(activeProfileId, updateData);
       setSuccess('Profile updated successfully');
     } catch (err) {
       setError(getErrorMessage(err));
@@ -106,7 +110,7 @@ const SettingsPage = () => {
 
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
-    if (!file || !activeProfileId) return;
+    if (!file || !activeProfileId || !user?.uid) return;
 
     setUploading(true);
     setError('');
@@ -116,6 +120,7 @@ const SettingsPage = () => {
 
       if (isCompany) {
         await updateProfileData(user.uid, activeProfileId, { companyLogo: downloadUrl });
+        updateProfileStore(activeProfileId, { companyLogo: downloadUrl });
         setSuccess('Logo uploaded successfully');
       }
     } catch (err) {
@@ -127,9 +132,10 @@ const SettingsPage = () => {
 
   const handleThemeChange = async (themeKey) => {
     setPalette(themeKey);
-    if (!activeProfileId) return;
+    if (!activeProfileId || !user?.uid) return;
     try {
       await updateProfileData(user.uid, activeProfileId, { themePalette: themeKey });
+      updateProfileStore(activeProfileId, { themePalette: themeKey });
       setSuccess('Theme updated successfully');
     } catch (err) {
       console.error('Error updating theme:', err);

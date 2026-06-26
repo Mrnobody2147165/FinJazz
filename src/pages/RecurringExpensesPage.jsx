@@ -63,7 +63,7 @@ const categories = [
 
 const RecurringExpensesPage = () => {
   const { user } = useAuth();
-  const { activeProfileId } = useAuthStore();
+  const { activeProfileId, activeProfile } = useAuthStore();
   const [recurringExpenses, setRecurringExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -72,7 +72,7 @@ const RecurringExpensesPage = () => {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const currency = 'PKR'; // Could be from profile settings
+  const currency = activeProfile?.currency || 'PKR';
 
   const {
     register,
@@ -91,18 +91,33 @@ const RecurringExpensesPage = () => {
   });
 
   useEffect(() => {
-    if (!user?.uid || !activeProfileId) return;
+    if (!user?.uid || !activeProfileId) {
+      setLoading(false);
+      return;
+    }
+
+    let mounted = true;
 
     const unsubscribe = subscribeToRecurringExpenses(
       user.uid,
       activeProfileId,
       (data) => {
-        setRecurringExpenses(data);
-        setLoading(false);
+        if (mounted) {
+          setRecurringExpenses(data);
+          setLoading(false);
+        }
       }
     );
 
-    return () => unsubscribe();
+    const timeout = setTimeout(() => {
+      if (mounted) setLoading(false);
+    }, 3000);
+
+    return () => {
+      mounted = false;
+      clearTimeout(timeout);
+      unsubscribe();
+    };
   }, [user?.uid, activeProfileId]);
 
   const openAddModal = () => {

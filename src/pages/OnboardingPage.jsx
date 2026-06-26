@@ -17,8 +17,9 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Card } from "@/components/ui/Card";
 import { useAuth } from "@/hooks/useAuth";
-import { updateUserData } from "@/firebase/firestore";
+import { updateUserData, createProfile } from "@/firebase/firestore";
 import useThemeStore from "@/stores/themeStore";
+import useAuthStore from "@/stores/authStore";
 
 const accountTypeSchema = z.object({
   accountType: z.enum(["personal", "company"], {
@@ -44,6 +45,7 @@ const currencies = [
 const OnboardingPage = () => {
   const navigate = useNavigate();
   const { user, userData } = useAuth();
+  const { addProfile, setActiveProfile } = useAuthStore();
   const { palette, setPalette, getAllPalettes } = useThemeStore();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -96,6 +98,19 @@ const OnboardingPage = () => {
       }
 
       await updateUserData(user.uid, updateData);
+
+      // Create default profile for the user
+      const profileData = {
+        profileType: selectedAccountType,
+        currency: data.currency,
+        themePalette: selectedTheme,
+        profileName: selectedAccountType === 'company' ? data.companyName : 'Personal',
+      };
+
+      const profileId = await createProfile(user.uid, profileData);
+      const newProfile = { id: profileId, ...profileData };
+      addProfile(newProfile);
+      setActiveProfile(profileId);
 
       // force refresh
       window.location.href = "/dashboard";

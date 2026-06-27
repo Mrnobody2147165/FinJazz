@@ -23,13 +23,13 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Modal, ModalContent, ModalFooter } from '@/components/ui/Modal';
-import { useAuth } from '@/hooks/useAuth';
-import { useAuthStore } from '@/stores/index';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { useAuth, useActiveProfile } from '@/hooks/useAuth';
+import { useDashboardData } from '@/hooks';
 import {
   createTransaction,
   updateTransaction,
   deleteTransaction,
-  subscribeToTransactions,
 } from '@/firebase/firestore';
 import { formatCurrency, formatDate, getErrorMessage } from '@/utils/helpers';
 
@@ -49,10 +49,9 @@ const categories = {
 
 const TransactionsPage = () => {
   const { user } = useAuth();
-  const { activeProfileId, activeProfile } = useAuthStore();
+  const { activeProfileId, currency } = useActiveProfile();
+  const { transactions, isLoading } = useDashboardData();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -60,8 +59,7 @@ const TransactionsPage = () => {
   const [filterCategory, setFilterCategory] = useState('all');
   const [submitting, setSubmitting] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
-
-  const currency = activeProfile?.currency || 'PKR';
+  const [formError, setFormError] = useState('');
 
   const {
     register,
@@ -91,32 +89,6 @@ const TransactionsPage = () => {
   }, [searchParams, setSearchParams]);
 
   useEffect(() => {
-    if (!user?.uid || !activeProfileId) {
-      setLoading(false);
-      return;
-    }
-
-    let mounted = true;
-    const unsubscribe = subscribeToTransactions(user.uid, activeProfileId, (data) => {
-      if (mounted) {
-        setTransactions(data);
-        setLoading(false);
-      }
-    });
-
-    // Safety timeout
-    const timeout = setTimeout(() => {
-      if (mounted) setLoading(false);
-    }, 3000);
-
-    return () => {
-      mounted = false;
-      clearTimeout(timeout);
-      unsubscribe();
-    };
-  }, [user?.uid, activeProfileId]);
-
-  useEffect(() => {
     if (editingTransaction) {
       const date = editingTransaction.date?.toDate
         ? editingTransaction.date.toDate()
@@ -142,7 +114,8 @@ const TransactionsPage = () => {
   }, [editingTransaction, reset]);
 
   const filteredTransactions = transactions.filter((t) => {
-    const matchesSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const title = (t.title || '').toLowerCase();
+    const matchesSearch = title.includes(searchQuery.toLowerCase());
     const matchesType = filterType === 'all' || t.type === filterType;
     const matchesCategory = filterCategory === 'all' || t.category === filterCategory;
     return matchesSearch && matchesType && matchesCategory;
@@ -172,35 +145,42 @@ const TransactionsPage = () => {
   };
 
   const onSubmit = async (data) => {
+    if (!user?.uid || !activeProfileId) return;
     setSubmitting(true);
+    setFormError('');
     try {
-      const transactionData = {
-        ...data,
-        date: new Date(data.date),
-      };
-
+      const transactionData = { ...data, date: new Date(data.date) };
       if (editingTransaction) {
         await updateTransaction(user.uid, activeProfileId, editingTransaction.id, transactionData);
       } else {
         await createTransaction(user.uid, activeProfileId, transactionData);
       }
-
       closeModal();
     } catch (error) {
-      console.error('Error saving transaction:', error);
+      setFormError(getErrorMessage(error));
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDelete = async (id) => {
+    if (!user?.uid || !activeProfileId) return;
     try {
       await deleteTransaction(user.uid, activeProfileId, id);
       setDeleteId(null);
     } catch (error) {
-      console.error('Error deleting transaction:', error);
+      setFormError(getErrorMessage(error));
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-48" />
+        <Skeleton className="h-96" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -282,7 +262,7 @@ const TransactionsPage = () => {
 
       <Card>
         <CardContent className="p-0">
-          {loading ? (
+          {isLoading ? (
             <div className="p-6 text-center text-[var(--muted-foreground)]">Loading...</div>
           ) : filteredTransactions.length === 0 ? (
             <EmptyState
@@ -448,6 +428,9 @@ const TransactionsPage = () => {
 
               <Textarea {...register('notes')} label="Notes (optional)" placeholder="Add notes..." rows={3} />
             </div>
+            {formError && (
+              <p className="text-sm text-[var(--danger)] mt-4">{formError}</p>
+            )}
           </ModalContent>
           <ModalFooter>
             <Button type="button" variant="outline" onClick={closeModal}>

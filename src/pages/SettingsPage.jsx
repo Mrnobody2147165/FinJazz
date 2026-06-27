@@ -20,7 +20,7 @@ import { Select } from '@/components/ui/Select';
 import { Avatar } from '@/components/ui/Avatar';
 import { Toggle } from '@/components/ui/Toggle';
 import { Badge } from '@/components/ui/Badge';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth, useActiveProfile } from '@/hooks/useAuth';
 import useThemeStore from '@/stores/themeStore';
 import useAuthStore from '@/stores/authStore';
 import { updateProfile as updateProfileData } from '@/firebase/firestore';
@@ -43,10 +43,9 @@ const currencies = [
 ];
 
 const SettingsPage = () => {
-  const auth = useAuth();
-  const { activeProfileId, activeProfile, updateProfile: updateProfileStore, user: storeUser } = useAuthStore();
-  // Use Firebase user from auth store ( Zustand persisted)
-  const user = storeUser || auth.user;
+  const { user, userData } = useAuth();
+  const { activeProfileId, activeProfile } = useActiveProfile();
+  const updateProfileStore = useAuthStore((s) => s.updateProfile);
   const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);

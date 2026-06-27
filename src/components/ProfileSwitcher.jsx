@@ -5,10 +5,12 @@ import { useAuthStore } from '@/stores/index';
 import { getInitials } from '@/utils/helpers';
 
 const ProfileSwitcher = ({ onAddProfile }) => {
-  const { profiles, activeProfileId, setActiveProfile } = useAuthStore();
+  const profiles = useAuthStore((s) => s.profiles);
+  const activeProfileId = useAuthStore((s) => s.activeProfileId);
+  const setActiveProfile = useAuthStore((s) => s.setActiveProfile);
+  const activeProfile = profiles.find((p) => p.id === activeProfileId);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
-  const activeProfile = profiles.find((p) => p.id === activeProfileId);
 
   useEffect(() => {
     const handleClickOutside = (event) => {

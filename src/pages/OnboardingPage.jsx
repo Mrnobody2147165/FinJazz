@@ -20,6 +20,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { updateUserData, createProfile } from "@/firebase/firestore";
 import useThemeStore from "@/stores/themeStore";
 import useAuthStore from "@/stores/authStore";
+import { getErrorMessage } from "@/utils/helpers";
 
 const accountTypeSchema = z.object({
   accountType: z.enum(["personal", "company"], {
@@ -45,10 +46,10 @@ const currencies = [
 const OnboardingPage = () => {
   const navigate = useNavigate();
   const { user, userData } = useAuth();
-  const { addProfile, setActiveProfile } = useAuthStore();
-  const { palette, setPalette, getAllPalettes } = useThemeStore();
+  const { setPalette, getAllPalettes } = useThemeStore();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [selectedAccountType, setSelectedAccountType] = useState("personal");
   const [selectedTheme, setSelectedTheme] = useState("emerald-violet");
 
@@ -84,6 +85,7 @@ const OnboardingPage = () => {
 
   const handleProfileSubmit = async (data) => {
     setLoading(true);
+    setError("");
     try {
       const updateData = {
         accountType: selectedAccountType,
@@ -99,7 +101,6 @@ const OnboardingPage = () => {
 
       await updateUserData(user.uid, updateData);
 
-      // Create default profile for the user
       const profileData = {
         profileType: selectedAccountType,
         currency: data.currency,
@@ -109,13 +110,14 @@ const OnboardingPage = () => {
 
       const profileId = await createProfile(user.uid, profileData);
       const newProfile = { id: profileId, ...profileData };
-      addProfile(newProfile);
-      setActiveProfile(profileId);
 
-      // force refresh
-      window.location.href = "/dashboard";
-    } catch (error) {
-      console.error("Error updating profile:", error);
+      useAuthStore.getState().setUserData({ ...useAuthStore.getState().userData, ...updateData });
+      useAuthStore.getState().addProfile(newProfile);
+      useAuthStore.getState().setActiveProfile(profileId);
+
+      navigate("/dashboard", { replace: true });
+    } catch (err) {
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -381,6 +383,10 @@ const OnboardingPage = () => {
                     <p className="text-sm text-[var(--error)]">
                       {profileForm.formState.errors.currency.message}
                     </p>
+                  )}
+
+                  {error && (
+                    <p className="text-sm text-[var(--danger)]">{error}</p>
                   )}
 
                   <div className="flex gap-3 pt-4">

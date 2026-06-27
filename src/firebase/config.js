@@ -12,26 +12,31 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// Check if required config is present
-const isConfigValid = firebaseConfig.apiKey && firebaseConfig.projectId;
+export const isFirebaseConfigured = Boolean(
+  firebaseConfig.apiKey && firebaseConfig.projectId
+);
 
-if (!isConfigValid) {
-  console.warn('[Firebase] Missing configuration. Please add Firebase credentials to .env file.');
+let app = null;
+let auth = null;
+let db = null;
+let storage = null;
+let initError = null;
+
+if (isFirebaseConfigured) {
+  try {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+    storage = getStorage(app);
+  } catch (error) {
+    initError = error;
+    console.error('[Firebase] Initialization failed:', error);
+  }
+} else {
+  console.error(
+    '[Firebase] Missing required environment variables. Add VITE_FIREBASE_API_KEY and VITE_FIREBASE_PROJECT_ID to .env'
+  );
 }
 
-let app;
-let auth;
-let db;
-let storage;
-
-try {
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
-} catch (error) {
-  console.error('[Firebase] Initialization error:', error);
-}
-
-export { auth, db, storage };
+export { auth, db, storage, initError };
 export default app;

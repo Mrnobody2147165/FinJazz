@@ -22,7 +22,10 @@ const profileSchema = z.object({
 });
 
 const CreateProfileModal = ({ isOpen, onClose }) => {
-  const { user, addProfile, setActiveProfile } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
+  const profiles = useAuthStore((s) => s.profiles);
+  const addProfile = useAuthStore((s) => s.addProfile);
+  const setActiveProfile = useAuthStore((s) => s.setActiveProfile);
   const [isCompany, setIsCompany] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -59,6 +62,17 @@ const CreateProfileModal = ({ isOpen, onClose }) => {
   const onSubmit = async (data) => {
     if (isCompany && !data.companyName) {
       setError('Company name is required');
+      return;
+    }
+
+    const profileType = isCompany ? 'company' : 'personal';
+    if (profiles.some((p) => p.profileType === profileType)) {
+      setError(`A ${profileType} profile already exists. Only one profile per type is supported.`);
+      return;
+    }
+
+    if (!user?.uid) {
+      setError('You must be signed in to create a profile');
       return;
     }
 

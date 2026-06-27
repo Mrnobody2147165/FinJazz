@@ -15,162 +15,89 @@ import {
   ChevronDown,
   RefreshCw,
 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth, useActiveProfile } from '@/hooks/useAuth';
+import { useDashboardData } from '@/hooks';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import useThemeStore from '@/stores/themeStore';
-import { useAuthStore, useNotificationStore } from '@/stores/index';
+import useAuthStore from '@/stores/authStore';
+import { useNotificationStore } from '@/stores/index';
 import ProfileSwitcher from '@/components/ProfileSwitcher';
 import NotificationCenter from '@/components/NotificationCenter';
 import GlobalSearch from '@/components/GlobalSearch';
 import CreateProfileModal from '@/components/CreateProfileModal';
+import { DashboardDataProvider } from '@/providers';
 import {
   subscribeToNotifications,
   markNotificationRead,
   markAllNotificationsRead,
   deleteNotification,
-  subscribeToProfiles,
-  subscribeToTransactions,
-  subscribeToBudgets,
-  subscribeToProjects,
-  subscribeToRecurringExpenses,
-  checkBudgetAlerts,
-  checkProjectDeadlines,
 } from '@/firebase/firestore';
 
-const DashboardLayout = () => {
-  const auth = useAuth();
-  const { userData, handleLogout } = auth;
+const DashboardLayoutContent = () => {
+  const { userData, logout } = useAuth();
+  const { activeProfile, isCompany } = useActiveProfile();
+  const userId = useAuthStore((s) => s.user?.uid);
   const themeColors = useThemeColors();
   const { darkMode, toggleDarkMode } = useThemeStore();
-  const {
-    user,
-    profiles,
-    setProfiles,
-    activeProfileId,
-    activeProfile,
-  } = useAuthStore();
   const { setNotifications, notifications } = useNotificationStore();
+  const { transactions, budgets, projects, recurringExpenses } = useDashboardData();
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [createProfileOpen, setCreateProfileOpen] = useState(false);
-  const [transactions, setTransactions] = useState([]);
-  const [budgets, setBudgets] = useState([]);
-  const [projects, setProjects] = useState([]);
-  const [recurringExpenses, setRecurringExpenses] = useState([]);
   const navigate = useNavigate();
 
-  // Use Firebase user uid for Firestore operations
-  const userId = user?.uid;
-
-  // Derived values - must be declared before any useEffect that uses them
-  const isCompany = activeProfile?.profileType === 'company';
-
-  // Subscribe to profiles
   useEffect(() => {
     if (!userId) return;
-    return subscribeToProfiles(userId, setProfiles);
-  }, [userId]);
-
-  // Subscribe to notifications
-  useEffect(() => {
-    if (!userId) return;
-    return subscribeToNotifications(userId, setNotifications);
-  }, [userId]);
-
-  // Subscribe to active profile data
-  useEffect(() => {
-    if (!userId || !activeProfileId) return;
-
-    const unsubTransactions = subscribeToTransactions(userId, activeProfileId, setTransactions);
-    const unsubBudgets = subscribeToBudgets(userId, activeProfileId, setBudgets);
-    const unsubRecurring = subscribeToRecurringExpenses(userId, activeProfileId, setRecurringExpenses);
-    let unsubProjects;
-    if (activeProfile?.profileType === 'company') {
-      unsubProjects = subscribeToProjects(userId, activeProfileId, setProjects);
-    }
-
-    return () => {
-      unsubTransactions();
-      unsubBudgets();
-      unsubRecurring();
-      if (unsubProjects) unsubProjects();
-    };
-  }, [userId, activeProfileId, activeProfile?.profileType]);
-
-  // Check budget alerts when transactions or budgets change
-  useEffect(() => {
-    if (!userId || !activeProfileId || transactions.length === 0 || budgets.length === 0) return;
-    checkBudgetAlerts(userId, activeProfileId, transactions, budgets);
-  }, [userId, activeProfileId, transactions.length, budgets.length]);
-
-  // Check project deadlines when projects change (company only)
-  useEffect(() => {
-    if (!userId || !activeProfileId || !isCompany || projects.length === 0) return;
-    checkProjectDeadlines(userId, activeProfileId, projects);
-  }, [userId, activeProfileId, isCompany, projects.length]);
+    return subscribeToNotifications(userId, setNotifications, (error) => {
+      console.error('[Notifications] Subscription error:', error);
+    });
+  }, [userId, setNotifications]);
 
   const navItems = [
-    {
-      name: 'Dashboard',
-      href: '/dashboard',
-      icon: LayoutDashboard,
-    },
-    {
-      name: 'Transactions',
-      href: '/transactions',
-      icon: Receipt,
-    },
-    {
-      name: 'Budgets',
-      href: '/budgets',
-      icon: PiggyBank,
-    },
-    {
-      name: 'Recurring',
-      href: '/recurring-expenses',
-      icon: RefreshCw,
-    },
-    ...(isCompany
-      ? [
-          {
-            name: 'Projects',
-            href: '/projects',
-            icon: FolderKanban,
-          },
-        ]
-      : []),
-    {
-      name: 'Settings',
-      href: '/settings',
-      icon: Settings,
-    },
+    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Transactions', href: '/transactions', icon: Receipt },
+    { name: 'Budgets', href: '/budgets', icon: PiggyBank },
+    { name: 'Recurring', href: '/recurring-expenses', icon: RefreshCw },
+    ...(isCompany ? [{ name: 'Projects', href: '/projects', icon: FolderKanban }] : []),
+    { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
   const handleLogoutClick = async () => {
-    await handleLogout();
+    await logout();
     navigate('/login');
   };
 
   const handleMarkRead = async (notificationId) => {
     if (!userId) return;
-    await markNotificationRead(userId, notificationId);
+    try {
+      await markNotificationRead(userId, notificationId);
+    } catch (error) {
+      console.error('[Notifications] Mark read failed:', error);
+    }
   };
 
   const handleMarkAllRead = async () => {
     if (!userId) return;
-    await markAllNotificationsRead(userId);
+    try {
+      await markAllNotificationsRead(userId);
+    } catch (error) {
+      console.error('[Notifications] Mark all read failed:', error);
+    }
   };
 
   const handleDeleteNotification = async (notificationId) => {
     if (!userId) return;
-    await deleteNotification(userId, notificationId);
+    try {
+      await deleteNotification(userId, notificationId);
+    } catch (error) {
+      console.error('[Notifications] Delete failed:', error);
+    }
   };
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      {/* Mobile header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-30 flex items-center justify-between p-4 bg-[var(--card)] border-b border-[var(--border)]">
         <button onClick={() => setSidebarOpen(true)} className="text-[var(--foreground)]">
           <Menu className="h-6 w-6" />
@@ -182,15 +109,10 @@ const DashboardLayout = () => {
             onMarkAllRead={handleMarkAllRead}
             onDelete={handleDeleteNotification}
           />
-          <Avatar
-            src={userData?.profileImage}
-            name={userData?.fullName}
-            size="sm"
-          />
+          <Avatar src={userData?.profileImage} name={userData?.fullName} size="sm" />
         </div>
       </div>
 
-      {/* Mobile sidebar overlay */}
       <AnimatePresence>
         {sidebarOpen && (
           <>
@@ -238,7 +160,6 @@ const DashboardLayout = () => {
         )}
       </AnimatePresence>
 
-      {/* Desktop sidebar - with theme-gradient background */}
       <aside
         className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:w-64 lg:flex-col"
         style={{ background: themeColors.gradientSidebar }}
@@ -247,7 +168,6 @@ const DashboardLayout = () => {
           <h1 className="text-xl font-bold text-[var(--sidebar-text)]">FinJazz</h1>
         </div>
 
-        {/* Profile Switcher */}
         <ProfileSwitcher onAddProfile={() => setCreateProfileOpen(true)} />
 
         <nav className="flex-1 p-4 space-y-1">
@@ -280,9 +200,7 @@ const DashboardLayout = () => {
         </div>
       </aside>
 
-      {/* Main content area */}
       <div className="lg:pl-64">
-        {/* Desktop header */}
         <header className="hidden lg:flex items-center justify-between h-16 px-6 bg-[var(--card)]/80 backdrop-blur-sm border-b border-[var(--border)]">
           <div className="flex items-center gap-4">
             <GlobalSearch
@@ -294,7 +212,7 @@ const DashboardLayout = () => {
               activeProfile={activeProfile}
             />
             <span className="text-sm text-[var(--muted-foreground)]">
-              {activeProfile?.profileType === 'company' ? 'Company Dashboard' : 'Personal Dashboard'}
+              {isCompany ? 'Company Dashboard' : 'Personal Dashboard'}
             </span>
           </div>
           <div className="flex items-center gap-4">
@@ -354,18 +272,20 @@ const DashboardLayout = () => {
           </div>
         </header>
 
-        <main className="p-4 lg:p-8 min-h-[calc(100vh-4rem)]">
+        <main className="p-4 lg:p-8 min-h-[calc(100vh-4rem)] pt-20 lg:pt-0">
           <Outlet />
         </main>
       </div>
 
-      {/* Create Profile Modal */}
-      <CreateProfileModal
-        isOpen={createProfileOpen}
-        onClose={() => setCreateProfileOpen(false)}
-      />
+      <CreateProfileModal isOpen={createProfileOpen} onClose={() => setCreateProfileOpen(false)} />
     </div>
   );
 };
+
+const DashboardLayout = () => (
+  <DashboardDataProvider>
+    <DashboardLayoutContent />
+  </DashboardDataProvider>
+);
 
 export default DashboardLayout;

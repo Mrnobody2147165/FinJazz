@@ -22,6 +22,7 @@ export const useThemeColors = () => {
       // Semantic colors with proper contrast
       positive: theme.success,
       negative: theme.danger,
+      error: theme.danger,
       // UI colors
       background: theme.background,
       surface: theme.surface,

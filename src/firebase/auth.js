@@ -25,7 +25,7 @@ export const signUpWithEmail = async (email, password, fullName) => {
     fullName: fullName,
     accountType: 'personal',
     themePalette: 'emerald-violet',
-    currency: 'USD',
+    currency: 'PKR',
     onboardingComplete: false,
     profileImage: null,
     companyLogo: null,
@@ -54,7 +54,7 @@ export const signInWithGoogle = async () => {
       fullName: user.displayName || '',
       accountType: 'personal',
       themePalette: 'emerald-violet',
-      currency: 'USD',
+      currency: 'PKR',
       onboardingComplete: false,
       profileImage: user.photoURL || null,
       companyLogo: null,
@@ -62,8 +62,6 @@ export const signInWithGoogle = async () => {
       createdAt: serverTimestamp(),
     });
   }
-  console.log("db object:", db);
-
   return user;
 };
 

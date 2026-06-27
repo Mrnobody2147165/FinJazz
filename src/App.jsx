@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from '@/hooks/useAuth';
+import { AuthProvider } from '@/providers';
 import { DashboardLayout, AuthLayout } from '@/layouts';
-import { ProtectedRoute, PublicRoute } from '@/routes';
+import { ProtectedRoute, PublicRoute, CompanyRoute } from '@/routes';
 import {
   LoginPage,
   SignupPage,
@@ -36,7 +36,14 @@ function App() {
               <Route path="/transactions" element={<TransactionsPage />} />
               <Route path="/budgets" element={<BudgetsPage />} />
               <Route path="/recurring-expenses" element={<RecurringExpensesPage />} />
-              <Route path="/projects" element={<ProjectsPage />} />
+              <Route
+                path="/projects"
+                element={
+                  <CompanyRoute>
+                    <ProjectsPage />
+                  </CompanyRoute>
+                }
+              />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>

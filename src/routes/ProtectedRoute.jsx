@@ -1,52 +1,42 @@
-import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import useAuthStore from "@/stores/authStore";
-import { LoadingOverlay } from "@/components/ui/Loading";
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { LoadingOverlay } from '@/components/ui/Loading';
 
 const ProtectedRoute = () => {
-  const authState = useAuth() || {};
-  const { user, userData, initialLoad } = authState;
-  const { profiles, activeProfileId } = useAuthStore();
+  const { user, userData, isInitializing, authError } = useAuth();
   const location = useLocation();
 
-  console.log("[ProtectedRoute]", {
-    initialLoad,
-    hasUser: !!user,
-    hasUserData: !!userData,
-    hasProfiles: profiles.length,
-    onboardingComplete: userData?.onboardingComplete,
-    pathname: location.pathname,
-  });
-
-  if (initialLoad) {
-    console.log("[ProtectedRoute] Showing loading overlay - initialLoad");
+  if (isInitializing) {
     return <LoadingOverlay message="Loading..." />;
   }
 
   if (!user) {
-    console.log("[ProtectedRoute] Redirecting to /login - no user");
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // If no userData in Firestore yet, go to onboarding
+  if (authError && !userData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--background)] p-4">
+        <div className="max-w-md text-center space-y-4">
+          <p className="text-[var(--danger)] font-medium">Unable to load your account</p>
+          <p className="text-sm text-[var(--muted-foreground)]">{authError}</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!userData) {
-    console.log("[ProtectedRoute] No userData, redirecting to onboarding");
     return <Navigate to="/onboarding" replace />;
   }
 
-  // If onboarding not complete, go to onboarding
-  if (userData && !userData.onboardingComplete && location.pathname !== "/onboarding") {
-    console.log("[ProtectedRoute] Redirecting to /onboarding");
+  if (!userData.onboardingComplete && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />;
   }
 
-  // If onboarding complete and on onboarding page, go to dashboard
-  if (userData?.onboardingComplete && location.pathname === "/onboarding") {
-    console.log("[ProtectedRoute] Redirecting to /dashboard - onboarding complete");
+  if (userData.onboardingComplete && location.pathname === '/onboarding') {
     return <Navigate to="/dashboard" replace />;
   }
 
-  console.log("[ProtectedRoute] Rendering outlet");
   return <Outlet />;
 };
 

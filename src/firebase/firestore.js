@@ -11,42 +11,33 @@ import {
   orderBy,
   limit,
   serverTimestamp,
-  onSnapshot,
   writeBatch,
-  Timestamp,
 } from 'firebase/firestore';
 import { db } from './config';
+import { createSubscription, mapSnapshotDocs, mapSingleDoc } from './subscriptions';
+import { PROJECT_STATUS } from '@/constants';
 
 // ============ USER OPERATIONS ============
 
 export const getUserData = async (uid) => {
   const userDoc = await getDoc(doc(db, 'users', uid));
-  if (userDoc.exists()) {
-    return { id: userDoc.id, ...userDoc.data() };
-  }
-  return null;
+  return mapSingleDoc(userDoc);
 };
 
 export const updateUserData = async (uid, data) => {
   await setDoc(
     doc(db, 'users', uid),
-    {
-      uid,
-      ...data,
-      updatedAt: serverTimestamp(),
-    },
+    { uid, ...data, updatedAt: serverTimestamp() },
     { merge: true }
   );
 };
 
-export const subscribeToUserData = (uid, callback) => {
-  return onSnapshot(doc(db, 'users', uid), (doc) => {
-    if (doc.exists()) {
-      callback({ id: doc.id, ...doc.data() });
-    } else {
-      callback(null);
-    }
-  });
+export const subscribeToUserData = (uid, callback, onError) => {
+  return createSubscription(
+    doc(db, 'users', uid),
+    (snapshot) => callback(mapSingleDoc(snapshot)),
+    onError
+  );
 };
 
 // ============ PROFILE OPERATIONS ============
@@ -63,7 +54,7 @@ export const createProfile = async (uid, profileData) => {
 
 export const getProfiles = async (uid) => {
   const snapshot = await getDocs(collection(db, 'users', uid, 'profiles'));
-  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  return mapSnapshotDocs(snapshot);
 };
 
 export const updateProfile = async (uid, profileId, data) => {
@@ -73,22 +64,12 @@ export const updateProfile = async (uid, profileId, data) => {
   });
 };
 
-export const getActiveProfile = async (uid, profileId) => {
-  const profileDoc = await getDoc(doc(db, 'users', uid, 'profiles', profileId));
-  if (profileDoc.exists()) {
-    return { id: profileDoc.id, ...profileDoc.data() };
-  }
-  return null;
-};
-
-export const subscribeToProfiles = (uid, callback) => {
-  return onSnapshot(collection(db, 'users', uid, 'profiles'), (snapshot) => {
-    const profiles = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    callback(profiles);
-  });
+export const subscribeToProfiles = (uid, callback, onError) => {
+  return createSubscription(
+    collection(db, 'users', uid, 'profiles'),
+    (snapshot) => callback(mapSnapshotDocs(snapshot)),
+    onError
+  );
 };
 
 // ============ TRANSACTION OPERATIONS ============
@@ -103,15 +84,6 @@ export const createTransaction = async (uid, profileId, transactionData) => {
   return transactionRef.id;
 };
 
-export const getTransactions = async (uid, profileId) => {
-  const transactionsQuery = query(
-    collection(db, 'users', uid, 'profiles', profileId, 'transactions'),
-    orderBy('date', 'desc')
-  );
-  const snapshot = await getDocs(transactionsQuery);
-  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-};
-
 export const updateTransaction = async (uid, profileId, transactionId, data) => {
   await updateDoc(doc(db, 'users', uid, 'profiles', profileId, 'transactions', transactionId), {
     ...data,
@@ -123,18 +95,16 @@ export const deleteTransaction = async (uid, profileId, transactionId) => {
   await deleteDoc(doc(db, 'users', uid, 'profiles', profileId, 'transactions', transactionId));
 };
 
-export const subscribeToTransactions = (uid, profileId, callback) => {
+export const subscribeToTransactions = (uid, profileId, callback, onError) => {
   const transactionsQuery = query(
     collection(db, 'users', uid, 'profiles', profileId, 'transactions'),
     orderBy('date', 'desc')
   );
-  return onSnapshot(transactionsQuery, (snapshot) => {
-    const transactions = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    callback(transactions);
-  });
+  return createSubscription(
+    transactionsQuery,
+    (snapshot) => callback(mapSnapshotDocs(snapshot)),
+    onError
+  );
 };
 
 // ============ BUDGET OPERATIONS ============
@@ -149,11 +119,6 @@ export const createBudget = async (uid, profileId, budgetData) => {
   return budgetRef.id;
 };
 
-export const getBudgets = async (uid, profileId) => {
-  const snapshot = await getDocs(collection(db, 'users', uid, 'profiles', profileId, 'budgets'));
-  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-};
-
 export const updateBudget = async (uid, profileId, budgetId, data) => {
   await updateDoc(doc(db, 'users', uid, 'profiles', profileId, 'budgets', budgetId), {
     ...data,
@@ -165,35 +130,27 @@ export const deleteBudget = async (uid, profileId, budgetId) => {
   await deleteDoc(doc(db, 'users', uid, 'profiles', profileId, 'budgets', budgetId));
 };
 
-export const subscribeToBudgets = (uid, profileId, callback) => {
-  return onSnapshot(collection(db, 'users', uid, 'profiles', profileId, 'budgets'), (snapshot) => {
-    const budgets = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    callback(budgets);
-  });
+export const subscribeToBudgets = (uid, profileId, callback, onError) => {
+  return createSubscription(
+    collection(db, 'users', uid, 'profiles', profileId, 'budgets'),
+    (snapshot) => callback(mapSnapshotDocs(snapshot)),
+    onError
+  );
 };
 
 // ============ PROJECT OPERATIONS ============
 
 export const createProject = async (uid, profileId, projectData) => {
   const projectRef = doc(collection(db, 'users', uid, 'profiles', profileId, 'projects'));
-  const project = {
+  await setDoc(projectRef, {
     ...projectData,
-    status: projectData.status || 'not-started',
+    status: projectData.status || PROJECT_STATUS.NOT_STARTED,
     revenue: projectData.revenue || 0,
     expenses: projectData.expenses || 0,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
-  };
-  await setDoc(projectRef, project);
+  });
   return projectRef.id;
-};
-
-export const getProjects = async (uid, profileId) => {
-  const snapshot = await getDocs(collection(db, 'users', uid, 'profiles', profileId, 'projects'));
-  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 };
 
 export const updateProject = async (uid, profileId, projectId, data) => {
@@ -207,14 +164,12 @@ export const deleteProject = async (uid, profileId, projectId) => {
   await deleteDoc(doc(db, 'users', uid, 'profiles', profileId, 'projects', projectId));
 };
 
-export const subscribeToProjects = (uid, profileId, callback) => {
-  return onSnapshot(collection(db, 'users', uid, 'profiles', profileId, 'projects'), (snapshot) => {
-    const projects = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    callback(projects);
-  });
+export const subscribeToProjects = (uid, profileId, callback, onError) => {
+  return createSubscription(
+    collection(db, 'users', uid, 'profiles', profileId, 'projects'),
+    (snapshot) => callback(mapSnapshotDocs(snapshot)),
+    onError
+  );
 };
 
 // ============ NOTIFICATION OPERATIONS ============
@@ -234,35 +189,27 @@ export const createNotificationIfNotExists = async (uid, notificationData) => {
   const refId = budgetId || projectId;
   const refField = budgetId ? 'budgetId' : 'projectId';
 
-  const existingQuery = query(
-    collection(db, 'users', uid, 'notifications'),
-    where('title', '==', title),
-    where(refField, '==', refId),
-    where('read', '==', false),
-    where('profileId', '==', profileId)
-  );
-
-  const existingSnapshot = await getDocs(existingQuery);
-  if (existingSnapshot.empty) {
+  try {
+    const existingQuery = query(
+      collection(db, 'users', uid, 'notifications'),
+      where('title', '==', title),
+      where(refField, '==', refId),
+      where('read', '==', false),
+      where('profileId', '==', profileId)
+    );
+    const existingSnapshot = await getDocs(existingQuery);
+    if (existingSnapshot.empty) {
+      return createNotification(uid, notificationData);
+    }
+  } catch (error) {
+    console.error('[Firestore] Notification dedup query failed:', error.message);
     return createNotification(uid, notificationData);
   }
   return null;
 };
 
-export const getNotifications = async (uid) => {
-  const notificationsQuery = query(
-    collection(db, 'users', uid, 'notifications'),
-    orderBy('createdAt', 'desc'),
-    limit(50)
-  );
-  const snapshot = await getDocs(notificationsQuery);
-  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-};
-
 export const markNotificationRead = async (uid, notificationId) => {
-  await updateDoc(doc(db, 'users', uid, 'notifications', notificationId), {
-    read: true,
-  });
+  await updateDoc(doc(db, 'users', uid, 'notifications', notificationId), { read: true });
 };
 
 export const markAllNotificationsRead = async (uid) => {
@@ -280,19 +227,17 @@ export const deleteNotification = async (uid, notificationId) => {
   await deleteDoc(doc(db, 'users', uid, 'notifications', notificationId));
 };
 
-export const subscribeToNotifications = (uid, callback) => {
+export const subscribeToNotifications = (uid, callback, onError) => {
   const notificationsQuery = query(
     collection(db, 'users', uid, 'notifications'),
     orderBy('createdAt', 'desc'),
     limit(50)
   );
-  return onSnapshot(notificationsQuery, (snapshot) => {
-    const notifications = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    callback(notifications);
-  });
+  return createSubscription(
+    notificationsQuery,
+    (snapshot) => callback(mapSnapshotDocs(snapshot)),
+    onError
+  );
 };
 
 // ============ RECURRING EXPENSE OPERATIONS ============
@@ -308,11 +253,6 @@ export const createRecurringExpense = async (uid, profileId, recurringData) => {
   return recurringRef.id;
 };
 
-export const getRecurringExpenses = async (uid, profileId) => {
-  const snapshot = await getDocs(collection(db, 'users', uid, 'profiles', profileId, 'recurringExpenses'));
-  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-};
-
 export const updateRecurringExpense = async (uid, profileId, recurringId, data) => {
   await updateDoc(doc(db, 'users', uid, 'profiles', profileId, 'recurringExpenses', recurringId), {
     ...data,
@@ -324,17 +264,21 @@ export const deleteRecurringExpense = async (uid, profileId, recurringId) => {
   await deleteDoc(doc(db, 'users', uid, 'profiles', profileId, 'recurringExpenses', recurringId));
 };
 
-export const subscribeToRecurringExpenses = (uid, profileId, callback) => {
-  return onSnapshot(collection(db, 'users', uid, 'profiles', profileId, 'recurringExpenses'), (snapshot) => {
-    const recurringExpenses = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    callback(recurringExpenses);
-  });
+export const subscribeToRecurringExpenses = (uid, profileId, callback, onError) => {
+  return createSubscription(
+    collection(db, 'users', uid, 'profiles', profileId, 'recurringExpenses'),
+    (snapshot) => callback(mapSnapshotDocs(snapshot)),
+    onError
+  );
 };
 
 // ============ BUDGET ALERT FUNCTIONS ============
+
+const formatCurrencyAbsolute = (amount) =>
+  new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
 
 export const checkBudgetAlerts = async (uid, profileId, transactions, budgets) => {
   const alerts = [];
@@ -343,10 +287,12 @@ export const checkBudgetAlerts = async (uid, profileId, transactions, budgets) =
   const currentYear = now.getFullYear();
 
   for (const budget of budgets) {
+    if (!budget.amount || budget.amount <= 0) continue;
+
     const spent = transactions
       .filter((t) => {
         if (t.type !== 'expense' || t.category !== budget.category) return false;
-        const date = t.date.toDate ? t.date.toDate() : new Date(t.date);
+        const date = t.date?.toDate ? t.date.toDate() : new Date(t.date);
         return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
       })
       .reduce((sum, t) => sum + t.amount, 0);
@@ -393,12 +339,8 @@ export const checkBudgetAlerts = async (uid, profileId, transactions, budgets) =
     }
   }
 
-  // Create notifications for alerts (deduplicated)
   for (const alert of alerts) {
-    await createNotificationIfNotExists(uid, {
-      ...alert,
-      profileId,
-    });
+    await createNotificationIfNotExists(uid, { ...alert, profileId });
   }
 
   return alerts;
@@ -411,9 +353,11 @@ export const checkProjectDeadlines = async (uid, profileId, projects) => {
   const alerts = [];
 
   for (const project of projects) {
-    if (project.status === 'completed') continue;
+    if (project.status === PROJECT_STATUS.COMPLETED || !project.dueDate) continue;
 
     const dueDate = project.dueDate?.toDate ? project.dueDate.toDate() : new Date(project.dueDate);
+    if (Number.isNaN(dueDate.getTime())) continue;
+
     const daysRemaining = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
 
     if (daysRemaining < 0) {
@@ -425,8 +369,9 @@ export const checkProjectDeadlines = async (uid, profileId, projects) => {
         projectName: project.name,
         daysRemaining,
       });
-      // Update project status to delayed
-      await updateProject(uid, profileId, project.id, { status: 'delayed' });
+      if (project.status !== PROJECT_STATUS.DELAYED) {
+        await updateProject(uid, profileId, project.id, { status: PROJECT_STATUS.DELAYED });
+      }
     } else if (daysRemaining <= 1) {
       alerts.push({
         type: 'critical',
@@ -457,21 +402,9 @@ export const checkProjectDeadlines = async (uid, profileId, projects) => {
     }
   }
 
-  // Create notifications for deadline alerts (deduplicated)
   for (const alert of alerts) {
-    await createNotificationIfNotExists(uid, {
-      ...alert,
-      profileId,
-    });
+    await createNotificationIfNotExists(uid, { ...alert, profileId });
   }
 
   return alerts;
-};
-
-// Helper function for absolute currency formatting (without symbol)
-const formatCurrencyAbsolute = (amount) => {
-  return new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
 };

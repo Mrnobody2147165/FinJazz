@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -23,10 +23,9 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/Badge';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Modal, ModalContent, ModalFooter } from '@/components/ui/Modal';
-import { useAuth } from '@/hooks/useAuth';
-import { useAuthStore } from '@/stores/index';
+import { useAuth, useActiveProfile } from '@/hooks/useAuth';
+import { useDashboardData } from '@/hooks';
 import {
-  subscribeToRecurringExpenses,
   createRecurringExpense,
   updateRecurringExpense,
   deleteRecurringExpense,
@@ -63,16 +62,13 @@ const categories = [
 
 const RecurringExpensesPage = () => {
   const { user } = useAuth();
-  const { activeProfileId, activeProfile } = useAuthStore();
-  const [recurringExpenses, setRecurringExpenses] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { activeProfileId, currency } = useActiveProfile();
+  const { recurringExpenses, isLoading } = useDashboardData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRecurring, setEditingRecurring] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const currency = activeProfile?.currency || 'PKR';
 
   const {
     register,
@@ -89,36 +85,6 @@ const RecurringExpensesPage = () => {
       frequency: 'monthly',
     },
   });
-
-  useEffect(() => {
-    if (!user?.uid || !activeProfileId) {
-      setLoading(false);
-      return;
-    }
-
-    let mounted = true;
-
-    const unsubscribe = subscribeToRecurringExpenses(
-      user.uid,
-      activeProfileId,
-      (data) => {
-        if (mounted) {
-          setRecurringExpenses(data);
-          setLoading(false);
-        }
-      }
-    );
-
-    const timeout = setTimeout(() => {
-      if (mounted) setLoading(false);
-    }, 3000);
-
-    return () => {
-      mounted = false;
-      clearTimeout(timeout);
-      unsubscribe();
-    };
-  }, [user?.uid, activeProfileId]);
 
   const openAddModal = () => {
     reset({
@@ -217,7 +183,7 @@ const RecurringExpensesPage = () => {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-10 w-48" />

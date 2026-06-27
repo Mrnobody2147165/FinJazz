@@ -12,16 +12,11 @@ import { Progress } from '@/components/ui/Progress';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Modal, ModalContent, ModalFooter } from '@/components/ui/Modal';
-import { useAuth } from '@/hooks/useAuth';
-import { useAuthStore } from '@/stores/index';
-import {
-  createBudget,
-  updateBudget,
-  deleteBudget,
-  subscribeToBudgets,
-  subscribeToTransactions,
-} from '@/firebase/firestore';
-import { formatCurrency } from '@/utils/helpers';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { useAuth, useActiveProfile } from '@/hooks/useAuth';
+import { useDashboardData } from '@/hooks';
+import { createBudget, updateBudget, deleteBudget } from '@/firebase/firestore';
+import { formatCurrency, getErrorMessage } from '@/utils/helpers';
 
 const budgetSchema = z.object({
   name: z.string().min(1, 'Budget name is required'),
@@ -43,16 +38,13 @@ const categories = [
 
 const BudgetsPage = () => {
   const { user } = useAuth();
-  const { activeProfileId, activeProfile } = useAuthStore();
-  const [budgets, setBudgets] = useState([]);
-  const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { activeProfileId, currency } = useActiveProfile();
+  const { budgets, transactions, isLoading } = useDashboardData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
-
-  const currency = activeProfile?.currency || 'PKR';
+  const [formError, setFormError] = useState('');
 
   const {
     register,
@@ -68,37 +60,6 @@ const BudgetsPage = () => {
       period: 'monthly',
     },
   });
-
-  useEffect(() => {
-    if (!user?.uid || !activeProfileId) {
-      setLoading(false);
-      return;
-    }
-
-    let mounted = true;
-
-    const unsubBudget = subscribeToBudgets(user.uid, activeProfileId, (data) => {
-      if (mounted) setBudgets(data);
-    });
-
-    const unsubTransactions = subscribeToTransactions(user.uid, activeProfileId, (data) => {
-      if (mounted) {
-        setTransactions(data);
-        setLoading(false);
-      }
-    });
-
-    const timeout = setTimeout(() => {
-      if (mounted) setLoading(false);
-    }, 3000);
-
-    return () => {
-      mounted = false;
-      clearTimeout(timeout);
-      unsubBudget();
-      unsubTransactions();
-    };
-  }, [user?.uid, activeProfileId]);
 
   useEffect(() => {
     if (editingBudget) {
@@ -156,7 +117,9 @@ const BudgetsPage = () => {
   };
 
   const onSubmit = async (data) => {
+    if (!user?.uid || !activeProfileId) return;
     setSubmitting(true);
+    setFormError('');
     try {
       if (editingBudget) {
         await updateBudget(user.uid, activeProfileId, editingBudget.id, data);
@@ -165,20 +128,34 @@ const BudgetsPage = () => {
       }
       closeModal();
     } catch (error) {
-      console.error('Error saving budget:', error);
+      setFormError(getErrorMessage(error));
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDelete = async (id) => {
+    if (!user?.uid || !activeProfileId) return;
     try {
       await deleteBudget(user.uid, activeProfileId, id);
       setDeleteId(null);
     } catch (error) {
-      console.error('Error deleting budget:', error);
+      setFormError(getErrorMessage(error));
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-48" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-40" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -190,19 +167,7 @@ const BudgetsPage = () => {
         </Button>
       </div>
 
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="p-6">
-              <div className="animate-pulse space-y-4">
-                <div className="h-6 bg-[var(--muted)] rounded w-1/2" />
-                <div className="h-4 bg-[var(--muted)] rounded w-3/4" />
-                <div className="h-2 bg-[var(--muted)] rounded" />
-              </div>
-            </Card>
-          ))}
-        </div>
-      ) : budgets.length === 0 ? (
+      {budgets.length === 0 ? (
         <Card>
           <CardContent className="py-12">
             <EmptyState
@@ -218,7 +183,7 @@ const BudgetsPage = () => {
           {budgets.map((budget) => {
             const spent = calculateSpent(budget);
             const remaining = budget.amount - spent;
-            const percentage = (spent / budget.amount) * 100;
+            const percentage = budget.amount > 0 ? (spent / budget.amount) * 100 : 0;
             const isOverBudget = spent > budget.amount;
 
             return (
@@ -335,6 +300,9 @@ const BudgetsPage = () => {
                 <option value="yearly">Yearly</option>
               </Select>
             </div>
+            {formError && (
+              <p className="text-sm text-[var(--danger)] mt-4">{formError}</p>
+            )}
           </ModalContent>
           <ModalFooter>
             <Button type="button" variant="outline" onClick={closeModal}>

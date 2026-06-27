@@ -11,10 +11,11 @@ import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Modal, ModalContent, ModalFooter } from '@/components/ui/Modal';
-import { useAuth } from '@/hooks/useAuth';
-import { useAuthStore } from '@/stores/index';
-import { createProject, updateProject, deleteProject, subscribeToProjects } from '@/firebase/firestore';
-import { formatCurrency, formatDate, calculateProjectMetrics, getDeadlineColor } from '@/utils/helpers';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { useAuth, useActiveProfile } from '@/hooks/useAuth';
+import { useDashboardData } from '@/hooks';
+import { createProject, updateProject, deleteProject } from '@/firebase/firestore';
+import { formatCurrency, formatDate, calculateProjectMetrics, getDeadlineColor, getErrorMessage } from '@/utils/helpers';
 
 const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
@@ -43,15 +44,13 @@ const statusVariants = {
 
 const ProjectsPage = () => {
   const { user } = useAuth();
-  const { activeProfileId, activeProfile } = useAuthStore();
-  const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { activeProfileId, currency } = useActiveProfile();
+  const { projects, isLoading } = useDashboardData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
-
-  const currency = activeProfile?.currency || 'PKR';
+  const [formError, setFormError] = useState('');
 
   const {
     register,
@@ -71,32 +70,6 @@ const ProjectsPage = () => {
       status: 'not-started',
     },
   });
-
-  useEffect(() => {
-    if (!user?.uid || !activeProfileId) {
-      setLoading(false);
-      return;
-    }
-
-    let mounted = true;
-
-    const unsubscribe = subscribeToProjects(user.uid, activeProfileId, (data) => {
-      if (mounted) {
-        setProjects(data);
-        setLoading(false);
-      }
-    });
-
-    const timeout = setTimeout(() => {
-      if (mounted) setLoading(false);
-    }, 3000);
-
-    return () => {
-      mounted = false;
-      clearTimeout(timeout);
-      unsubscribe();
-    };
-  }, [user?.uid, activeProfileId]);
 
   useEffect(() => {
     if (editingProject) {
@@ -141,7 +114,9 @@ const ProjectsPage = () => {
   };
 
   const onSubmit = async (data) => {
+    if (!user?.uid || !activeProfileId) return;
     setSubmitting(true);
+    setFormError('');
     try {
       const projectData = {
         ...data,
@@ -155,19 +130,20 @@ const ProjectsPage = () => {
         await createProject(user.uid, activeProfileId, projectData);
       }
       closeModal();
-    } catch (error) {
-      console.error('Error saving project:', error);
+    } catch (err) {
+      setFormError(getErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDelete = async (id) => {
+    if (!user?.uid || !activeProfileId) return;
     try {
       await deleteProject(user.uid, activeProfileId, id);
       setDeleteId(null);
-    } catch (error) {
-      console.error('Error deleting project:', error);
+    } catch (err) {
+      setFormError(getErrorMessage(err));
     }
   };
 
@@ -232,7 +208,7 @@ const ProjectsPage = () => {
         </Card>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <Card>
           <CardContent className="py-12 text-center">Loading...</CardContent>
         </Card>
@@ -442,6 +418,9 @@ const ProjectsPage = () => {
                 ))}
               </Select>
             </div>
+            {formError && (
+              <p className="text-sm text-[var(--danger)] mt-4">{formError}</p>
+            )}
           </ModalContent>
           <ModalFooter>
             <Button type="button" variant="outline" onClick={closeModal}>
